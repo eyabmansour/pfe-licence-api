@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:latest
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3302:3306"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: eyabms
+      MYSQL_DATABASE: login-data
+      MYSQL_USER: login-user
+      MYSQL_PASSWORD: eyap
+volumes:
+  db_data: {}
+
