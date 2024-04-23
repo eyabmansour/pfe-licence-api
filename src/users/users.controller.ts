@@ -13,14 +13,12 @@ import {
 import { UsersService } from './users.service';
 import { Request, Response } from 'express';
 import { AuthGuard } from 'src/authentification/auth.guard';
-import { Roles } from 'src/roles/roles.decorator';
 import { UserRole } from 'src/roles/user-role.model';
 import { User } from './users.model';
-import { RolesGuard } from 'src/roles/roles.guard';
+import { MinRole } from 'src/roles/min-role.decorator';
 
 @Controller('users')
 @UseGuards(AuthGuard)
-@UseGuards(RolesGuard)
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
@@ -45,7 +43,7 @@ export class UsersController {
   }
 
   @Post()
-  @Roles(UserRole.ADMINISTRATOR)
+  @MinRole(UserRole.ADMINISTRATOR)
   async createUser(
     @Body() userData: User,
     @Res() response: Response,
@@ -62,7 +60,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMINISTRATOR) // Administrators and users can update their own profile
+  @MinRole(UserRole.ADMINISTRATOR) // Administrators and users can update their own profile
   async updateUser(
     @Param('id') userId: string,
     @Body() userData: User,
@@ -85,7 +83,7 @@ export class UsersController {
     }
   }
   @Delete(':id')
-  @Roles(UserRole.ADMINISTRATOR) // Only administrators can delete users
+  @MinRole(UserRole.ADMINISTRATOR) // Only administrators can delete users
   async deleteUser(
     @Param('id') userId: string,
     @Res() response: Response,

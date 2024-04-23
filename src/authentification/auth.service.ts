@@ -1,6 +1,6 @@
 import {
+  ForbiddenException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -51,7 +51,7 @@ export class AuthService {
     };
   }
 
-  async validateToken(token: string): Promise<User> {
+  async validateToken(token: string, minRoleWeight?: number): Promise<User> {
     let payload: IJwtPayload;
     try {
       payload = this.jwtService.decode<IJwtPayload>(token);
@@ -60,9 +60,16 @@ export class AuthService {
     }
     const user = await this.prismaService.user.findUnique({
       where: { username: payload.username },
+      include: { role: true },
     });
     if (!user) {
       throw new UnauthorizedException();
+    }
+
+    if (minRoleWeight) {
+      if (!user.role || minRoleWeight > user.role.weight) {
+        throw new ForbiddenException();
+      }
     }
 
     return user;

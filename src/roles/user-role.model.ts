@@ -1,8 +1,8 @@
 enum UserRole {
-  CLIENT = 'client',
-  RESTAURATEUR = 'restaurateur',
-  DELIVERY_PERSON = 'livreur',
-  ADMINISTRATOR = 'administrateur',
+  CLIENT = 100,
+  RESTAURATEUR = 500,
+  DELIVERY_PERSON = 300,
+  ADMINISTRATOR = 1000,
 }
 
 interface UserRoleInfo {
