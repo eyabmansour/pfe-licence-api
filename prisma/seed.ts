@@ -55,8 +55,18 @@ async function main() {
     },
   });
   //TODO : seed first admin
-  console.log('Seed completed!');
+  await prisma.user.upsert({
+    where: { email: 'eyabms452@gmail.com' },
+    update: {},
+    create: {
+      username: 'eyabms',
+      email: 'eyabms452@gmail.com',
+      password: 'eya123',
+    },
+  });
 }
+console.log('Seed completed!');
+
 main()
   .then(async () => {
     await prisma.$disconnect();
