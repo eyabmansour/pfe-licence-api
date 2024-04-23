@@ -18,4 +18,21 @@ model User {
   email    String @unique
   username String @unique
   password String
+  role_id  Int?
+  role     Role?  @relation(fields: [role_id], references: [id])
+}
+
+model Role {
+  id     Int          @id @default(autoincrement())
+  name   String
+  code   RoleCodeEnum @unique()
+  weight Int
+  users  User[]
+}
+
+enum RoleCodeEnum {
+  CLIENT
+  RESTAURATEUR
+  DELIVERY_PERSON
+  ADMINISTRATOR
 }
