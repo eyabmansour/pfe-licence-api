@@ -10,6 +10,7 @@ import { LoginDto } from './dto/login-user.dto';
 import * as bcrypt from 'bcrypt';
 import { RegisterUsersDto } from './dto/register-user.dto';
 import { User } from 'src/users/users.model';
+import { IJwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -43,15 +44,17 @@ export class AuthService {
 
     const user = await this.usersService.createUser(createUsers);
 
+    const payload: IJwtPayload = { username: user.username };
+
     return {
-      token: this.jwtService.sign({ username: user.username }),
+      token: this.jwtService.sign(payload),
     };
   }
 
   async validateToken(token: string): Promise<User> {
-    let payload;
+    let payload: IJwtPayload;
     try {
-      payload = this.jwtService.decode(token);
+      payload = this.jwtService.decode<IJwtPayload>(token);
     } catch (error) {
       throw new UnauthorizedException();
     }
