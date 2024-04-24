@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login-user.dto';
 import { Request, Response } from 'express';
 import { RegisterUsersDto } from './dto/register-user.dto';
-
+import { RoleCodeEnum } from '@prisma/client';
 @Controller('/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -33,9 +33,10 @@ export class AuthController {
     @Req() request: Request,
     @Res() response: Response,
     @Body() registerDto: RegisterUsersDto,
+    @Body() roleCode: RoleCodeEnum,
   ): Promise<any> {
     try {
-      const result = await this.authService.register(registerDto);
+      const result = await this.authService.register(registerDto, roleCode);
       return response.status(200).json({
         status: 'OK!',
         message: 'Successfully register users!',

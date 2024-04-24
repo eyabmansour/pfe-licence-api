@@ -36,3 +36,35 @@ enum RoleCodeEnum {
   DELIVERY_PERSON
   ADMINISTRATOR
 }
+
+model Restaurant {
+  id           Int        @id @default(autoincrement())
+  name         String     @unique
+  address      String
+  phoneNumber  String
+  email        String
+  openingHours String
+  cuisineType  String
+  menuItems    MenuItem[]
+  menu         Menu[]
+}
+
+model Menu {
+  id            Int        @id @default(autoincrement())
+  name          String     @unique
+  description   String?
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id])
+  restaurant_id Int
+  menuItems     MenuItem[]
+}
+
+model MenuItem {
+  id            Int        @id @default(autoincrement())
+  name          String
+  description   String
+  price         Float
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id])
+  restaurant_id Int
+  menu_id       Int?
+  menu          Menu?      @relation(fields: [menu_id], references: [id])
+}
