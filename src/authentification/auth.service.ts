@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { RegisterUsersDto } from './dto/register-user.dto';
 import { User } from 'src/users/users.model';
 import { IJwtPayload } from './interfaces/jwt-payload.interface';
+import { RoleCodeEnum } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -36,13 +37,29 @@ export class AuthService {
       token: this.jwtService.sign({ username }, {}),
     };
   }
-  async register(createDto: RegisterUsersDto): Promise<any> {
-    const createUsers = new User();
-    createUsers.username = createDto.username;
-    createUsers.email = createDto.email;
-    createUsers.password = await bcrypt.hash(createDto.password, 10);
-
-    const user = await this.usersService.createUser(createUsers);
+  async register(
+    createDto: RegisterUsersDto,
+    roleCode: RoleCodeEnum,
+  ): Promise<any> {
+    const createUserObject = async () => {
+      const createUsers = new User();
+      createUsers.username = createDto.username;
+      createUsers.email = createDto.email;
+      createUsers.password = await bcrypt.hash(createDto.password, 10);
+      return createUsers;
+    };
+    const createUsers = await createUserObject();
+    const role = await this.prismaService.role.findUnique({
+      where: { code: roleCode },
+    });
+    if (!role) {
+      throw new Error(`Role with code ${roleCode} not found.`);
+    }
+    const userWithRole = {
+      ...createUsers,
+      role: { connect: { id: role.id } },
+    };
+    const user = await this.usersService.createUser(userWithRole);
 
     const payload: IJwtPayload = { username: user.username };
 

@@ -16,7 +16,7 @@ const UserRoleInfoMap: Record<UserRole, UserRoleInfo> = {
   [UserRole.RESTAURATEUR]: {
     name: 'Restaurateur',
     role: UserRole.RESTAURATEUR,
-    weight: 200,
+    weight: 500,
   },
   [UserRole.DELIVERY_PERSON]: {
     name: 'Livreur',
