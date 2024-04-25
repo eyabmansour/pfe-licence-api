@@ -38,8 +38,8 @@ enum RoleCodeEnum {
 }
 
 model Restaurant {
-  id           Int        @id @default(autoincrement())
-  name         String     @unique
+  id           Int                 @id @default(autoincrement())
+  name         String              @unique
   address      String
   phoneNumber  String
   email        String
@@ -47,6 +47,8 @@ model Restaurant {
   cuisineType  String
   menuItems    MenuItem[]
   menu         Menu[]
+  status       RestaurantStatus
+  requests     RestaurantRequest[]
 }
 
 model Menu {
@@ -67,4 +69,18 @@ model MenuItem {
   restaurant_id Int
   menu_id       Int?
   menu          Menu?      @relation(fields: [menu_id], references: [id])
+}
+
+enum RestaurantStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  BLOCKED
+}
+
+model RestaurantRequest {
+  id            Int              @id @default(autoincrement())
+  restaurant    Restaurant       @relation(fields: [restaurant_id], references: [id])
+  restaurant_id Int
+  status        RestaurantStatus
 }
