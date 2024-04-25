@@ -60,7 +60,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  @MinRole(UserRole.ADMINISTRATOR) // Administrators and users can update their own profile
+  @MinRole(UserRole.ADMINISTRATOR)
   async updateUser(
     @Param('id') userId: string,
     @Body() userData: User,

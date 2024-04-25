@@ -10,7 +10,7 @@ import { SubmitRestaurantRequestDto } from './dto/SubmitRestaurantRequestDto';
 import { MinRole } from 'src/roles/min-role.decorator';
 import { UserRole } from 'src/roles/user-role.model';
 
-@Controller('restaurateur')
+@Controller('restaurants')
 export class RestaurateurController {
   constructor(private readonly restaurateurService: RestaurateurService) {}
   @Post('/register')

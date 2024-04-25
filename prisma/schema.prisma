@@ -72,6 +72,7 @@ model MenuItem {
 }
 
 enum RestaurantStatus {
+  DRAFT
   PENDING
   APPROVED
   REJECTED
@@ -82,5 +83,5 @@ model RestaurantRequest {
   id            Int              @id @default(autoincrement())
   restaurant    Restaurant       @relation(fields: [restaurant_id], references: [id])
   restaurant_id Int
-  status        RestaurantStatus
+  status        RestaurantStatus @default(DRAFT)
 }

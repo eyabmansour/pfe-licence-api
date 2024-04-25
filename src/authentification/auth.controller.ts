@@ -33,10 +33,9 @@ export class AuthController {
     @Req() request: Request,
     @Res() response: Response,
     @Body() registerDto: RegisterUsersDto,
-    @Body() roleCode: RoleCodeEnum,
   ): Promise<any> {
     try {
-      const result = await this.authService.register(registerDto, roleCode);
+      const result = await this.authService.register(registerDto);
       return response.status(200).json({
         status: 'OK!',
         message: 'Successfully register users!',

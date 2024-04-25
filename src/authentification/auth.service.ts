@@ -37,35 +37,58 @@ export class AuthService {
       token: this.jwtService.sign({ username }, {}),
     };
   }
-  async register(
-    createDto: RegisterUsersDto,
-    roleCode: RoleCodeEnum,
-  ): Promise<any> {
+
+  async register(createDto: RegisterUsersDto): Promise<any> {
     const createUserObject = async () => {
-      const createUsers = new User();
-      createUsers.username = createDto.username;
-      createUsers.email = createDto.email;
-      createUsers.password = await bcrypt.hash(createDto.password, 10);
-      return createUsers;
+      const createUser = new User();
+      createUser.username = createDto.username;
+      createUser.email = createDto.email;
+      createUser.password = await bcrypt.hash(createDto.password, 10);
+      return createUser;
     };
-    const createUsers = await createUserObject();
-    const role = await this.prismaService.role.findUnique({
-      where: { code: roleCode },
+    const user = await createUserObject();
+    const defaultRole = await this.prismaService.role.findUnique({
+      where: { code: RoleCodeEnum.CLIENT },
     });
-    if (!role) {
-      throw new Error(`Role with code ${roleCode} not found.`);
+    if (!defaultRole) {
+      throw new Error(`Default role with code ${defaultRole} not found.`);
     }
     const userWithRole = {
-      ...createUsers,
-      role: { connect: { id: role.id } },
+      ...user,
+      role: { connect: { id: defaultRole.id } },
     };
-    const user = await this.usersService.createUser(userWithRole);
+    const createdUser = await this.usersService.createUser(userWithRole);
+    const payload: IJwtPayload = { username: createdUser.username };
+    const token = this.jwtService.sign(payload);
 
-    const payload: IJwtPayload = { username: user.username };
+    return { token };
+  }
 
-    return {
-      token: this.jwtService.sign(payload),
-    };
+  async updateUserRole(
+    userId: number,
+    newRoleCode: RoleCodeEnum,
+  ): Promise<any> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found.`);
+    }
+    const newRole = await this.prismaService.role.findUnique({
+      where: { code: newRoleCode },
+    });
+
+    if (!newRole) {
+      throw new Error(`Role with code ${newRoleCode} not found.`);
+    }
+    await this.prismaService.user.update({
+      where: { id: userId },
+      data: { role: { connect: { id: newRole.id } } },
+    });
+
+    return { message: 'User role updated successfully.' };
   }
 
   async validateToken(token: string, minRoleWeight?: number): Promise<User> {
