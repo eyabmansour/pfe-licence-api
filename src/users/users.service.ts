@@ -28,29 +28,29 @@ export class UsersService {
     });
   }
   async updateUser(
-    userId: string,
+    userId: number,
     data: Partial<RegisterUsersDto>,
   ): Promise<User> {
     const existingUser = await this.prisma.user.findUnique({
-      where: { id: parseInt(userId) },
+      where: { id: userId },
     });
     if (!existingUser) {
       throw new NotFoundException('User not found');
     }
     return this.prisma.user.update({
-      where: { id: parseInt(userId) },
+      where: { id: userId },
       data,
     });
   }
-  async deleteUser(userId: string): Promise<boolean> {
+  async deleteUser(userId: number): Promise<boolean> {
     const existingUser = await this.prisma.user.findUnique({
-      where: { id: parseInt(userId) },
+      where: { id: userId },
     });
     if (!existingUser) {
       throw new NotFoundException('User not found');
     }
     await this.prisma.user.delete({
-      where: { id: parseInt(userId) },
+      where: { id: userId },
     });
     return true;
   }

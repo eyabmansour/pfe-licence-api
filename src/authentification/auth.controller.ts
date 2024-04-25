@@ -1,9 +1,11 @@
-import { Controller, Post, Body, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, Req, Res, Put, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login-user.dto';
 import { Request, Response } from 'express';
 import { RegisterUsersDto } from './dto/register-user.dto';
 import { RoleCodeEnum } from '@prisma/client';
+import { MinRole } from 'src/roles/min-role.decorator';
+import { UserRole } from 'src/roles/user-role.model';
 @Controller('/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -45,6 +47,33 @@ export class AuthController {
       return response.status(500).json({
         status: 'ERROR!',
         message: 'Internal Server Error!',
+      });
+    }
+  }
+
+  @Put(':id')
+  @MinRole(UserRole.ADMINISTRATOR)
+  async updateUserRole(
+    @Param('id') userId: number,
+    @Param() newRoleCode: RoleCodeEnum,
+    @Res() response: Response,
+  ): Promise<any> {
+    try {
+      const updateUserRole = await this.authService.updateUserRole(
+        userId,
+        newRoleCode,
+      );
+      if (!updateUserRole) {
+        return response.status(404).json({
+          status: 'ERROR!',
+          message: 'User not found',
+        });
+      }
+      return response.status(200).json(updateUserRole);
+    } catch (err) {
+      return response.status(500).json({
+        status: 'ERROR!',
+        message: 'Internal Server Error',
       });
     }
   }

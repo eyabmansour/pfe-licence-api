@@ -62,7 +62,7 @@ export class UsersController {
   @Put(':id')
   @MinRole(UserRole.ADMINISTRATOR)
   async updateUser(
-    @Param('id') userId: string,
+    @Param('id') userId: number,
     @Body() userData: User,
     @Res() response: Response,
   ): Promise<any> {
@@ -85,7 +85,7 @@ export class UsersController {
   @Delete(':id')
   @MinRole(UserRole.ADMINISTRATOR) // Only administrators can delete users
   async deleteUser(
-    @Param('id') userId: string,
+    @Param('id') userId: number,
     @Res() response: Response,
   ): Promise<any> {
     try {
