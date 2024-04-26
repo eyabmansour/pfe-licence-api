@@ -10,36 +10,24 @@ import {
 @Injectable()
 export class RestaurateurService {
   constructor(private readonly prisma: PrismaService) {}
-  async register(data: RegisterRestaurantDto): Promise<Restaurant> {
-    const { restaurant, menu, menuItems } = data;
+  async register(restaurantDto: RegisterRestaurantDto): Promise<Restaurant> {
     try {
-      const createdRestaurant = await this.prisma.restaurant.create({
+      const createRestaurant = await this.prisma.restaurant.create({
         data: {
-          ...restaurant,
-          menu: {
-            create: [
-              {
-                ...menu,
-                menuItems: {
-                  create: menuItems.map((item) => ({ ...item })),
-                },
-              },
-            ],
-          },
-        },
-        include: {
-          menu: {
-            include: {
-              menuItems: true,
-            },
-          },
+          name: restaurantDto.restaurant.name,
+          address: restaurantDto.restaurant.address,
+          email: restaurantDto.restaurant.email,
+          phoneNumber: restaurantDto.restaurant.phoneNumber,
+          cuisineType: restaurantDto.restaurant.cuisineType,
+          openingHours: restaurantDto.restaurant.openingHours,
+          status: restaurantDto.restaurant.status,
         },
       });
-
-      return createdRestaurant;
+      return createRestaurant;
     } catch (error) {
-      console.error('Error creating restaurant with menu:', error);
-      throw new Error('Failed to create restaurant with menu items');
+      throw new Error(
+        `Erreur lors de la création du restaurant : ${error.message}`,
+      );
     }
   }
   async submitRestaurantRequest(

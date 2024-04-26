@@ -54,7 +54,7 @@ async function main() {
       weight: UserRole.CLIENT,
     },
   });
-  //TODO : seed first admin
+
   await prisma.user.upsert({
     where: { email: 'eyabms452@gmail.com' },
     update: {},
