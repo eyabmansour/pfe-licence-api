@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { RegisterRestaurantDto } from './dto/RegisterRestaurantDto';
 import {
+  Prisma,
   Restaurant,
   RestaurantRequest,
   RestaurantStatus,
@@ -10,18 +11,24 @@ import {
 @Injectable()
 export class RestaurateurService {
   constructor(private readonly prisma: PrismaService) {}
-  async register(restaurantDto: RegisterRestaurantDto): Promise<Restaurant> {
+
+  async register(
+    restaurantDto: RegisterRestaurantDto,
+    ownerId: number,
+  ): Promise<Restaurant> {
     try {
       const createRestaurant = await this.prisma.restaurant.create({
         data: {
-          name: restaurantDto.restaurant.name,
-          address: restaurantDto.restaurant.address,
-          email: restaurantDto.restaurant.email,
-          phoneNumber: restaurantDto.restaurant.phoneNumber,
-          cuisineType: restaurantDto.restaurant.cuisineType,
-          openingHours: restaurantDto.restaurant.openingHours,
-          status: restaurantDto.restaurant.status,
-        },
+          ...restaurantDto.restaurant,
+          name: restaurantDto.name,
+          address: restaurantDto.address,
+          email: restaurantDto.email,
+          phoneNumber: restaurantDto.phoneNumber,
+          openingHours: restaurantDto.openingHours,
+          cuisineType: restaurantDto.cuisineType,
+          status: restaurantDto.Status,
+          owner: { connect: { id: ownerId } },
+        } as Prisma.RestaurantCreateInput,
       });
       return createRestaurant;
     } catch (error) {
@@ -30,6 +37,19 @@ export class RestaurateurService {
       );
     }
   }
+  async getRestaurantsByUserId(userId: number): Promise<any> {
+    try {
+      const userRestaurants = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { restaurants: true },
+      });
+      return userRestaurants?.restaurants;
+    } catch (error) {
+      console.error('Error fetching user restaurants:', error);
+      throw new Error('Failed to fetch user restaurants');
+    }
+  }
+
   async submitRestaurantRequest(
     restaurantId: number,
   ): Promise<RestaurantRequest> {

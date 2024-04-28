@@ -13,11 +13,26 @@ import { UserRole } from 'src/roles/user-role.model';
 @Controller('restaurants')
 export class RestaurateurController {
   constructor(private readonly restaurateurService: RestaurateurService) {}
-  @Post('/register')
+  @Post('/register/:id')
   async register(
+    @Param('id') ownerId: number,
     @Body() restaurantData: RegisterRestaurantDto,
   ): Promise<Restaurant> {
-    return this.restaurateurService.register(restaurantData);
+    return this.restaurateurService.register(restaurantData, ownerId);
+  }
+  @Get('user/:userId/restaurants')
+  async getUserRestaurants(@Param('userId') userId: number): Promise<any> {
+    try {
+      const userRestaurants =
+        await this.restaurateurService.getRestaurantsByUserId(userId);
+      return {
+        data: userRestaurants,
+        message: 'User restaurants fetched successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching user restaurants:', error);
+      return { error: 'Failed to fetch user restaurants' };
+    }
   }
   @Post('/request')
   @MinRole(UserRole.RESTAURATEUR)
