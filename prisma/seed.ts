@@ -62,6 +62,9 @@ async function main() {
       username: 'eyabms',
       email: 'eyabms452@gmail.com',
       password: 'eya123',
+      role: {
+        connect: { code: RoleCodeEnum.ADMINISTRATOR },
+      },
     },
   });
 }

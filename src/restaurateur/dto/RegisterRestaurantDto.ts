@@ -1,14 +1,27 @@
-import { Restaurant, Menu, MenuItem, RestaurantStatus } from '@prisma/client';
+import { IsNotEmpty, IsEmail, IsPhoneNumber, IsEnum } from 'class-validator';
+import { RestaurantStatus } from '@prisma/client';
 
 export class RegisterRestaurantDto {
-  restaurant: Restaurant;
-  menu: Menu;
-  menuItems: MenuItem[];
+  @IsNotEmpty()
   name: string;
+
+  @IsNotEmpty()
   address: string;
+
+  @IsNotEmpty()
+  @IsEmail()
   email: string;
+
+  @IsNotEmpty()
+  @IsPhoneNumber()
   phoneNumber: string;
+
+  @IsNotEmpty()
   openingHours: string;
+
+  @IsNotEmpty()
   cuisineType: string;
-  Status: RestaurantStatus;
+
+  @IsEnum(RestaurantStatus)
+  status: RestaurantStatus;
 }

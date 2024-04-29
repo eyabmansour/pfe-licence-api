@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { RegisterRestaurantDto } from './dto/RegisterRestaurantDto';
 import {
@@ -7,6 +7,7 @@ import {
   RestaurantRequest,
   RestaurantStatus,
 } from '@prisma/client';
+import { validate } from 'class-validator';
 
 @Injectable()
 export class RestaurateurService {
@@ -16,25 +17,22 @@ export class RestaurateurService {
     restaurantDto: RegisterRestaurantDto,
     ownerId: number,
   ): Promise<Restaurant> {
+    const errors = await validate(restaurantDto);
+    if (errors.length > 0) {
+      throw new BadRequestException(errors);
+    }
     try {
       const createRestaurant = await this.prisma.restaurant.create({
         data: {
-          ...restaurantDto.restaurant,
-          name: restaurantDto.name,
-          address: restaurantDto.address,
-          email: restaurantDto.email,
-          phoneNumber: restaurantDto.phoneNumber,
-          openingHours: restaurantDto.openingHours,
-          cuisineType: restaurantDto.cuisineType,
-          status: restaurantDto.Status,
+          ...restaurantDto,
+          status: RestaurantStatus.DRAFT,
           owner: { connect: { id: ownerId } },
-        } as Prisma.RestaurantCreateInput,
+        },
       });
       return createRestaurant;
     } catch (error) {
-      throw new Error(
-        `Erreur lors de la création du restaurant : ${error.message}`,
-      );
+      console.error('Error creating restaurant:', error);
+      throw new Error('Failed to create restaurant');
     }
   }
   async getRestaurantsByUserId(userId: number): Promise<any> {
