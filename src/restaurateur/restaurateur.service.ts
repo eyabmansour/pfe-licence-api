@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { RegisterRestaurantDto } from './dto/RegisterRestaurantDto';
 import {
@@ -91,5 +95,20 @@ export class RestaurateurService {
       console.error('Error updating restaurant status:', error);
       throw new Error('Failed to update restaurant status');
     }
+  }
+  async switchRestaurant(
+    ownerId: number,
+    restaurantId: number,
+  ): Promise<Restaurant> {
+    const restaurant = await this.prisma.restaurant.findFirst({
+      where: {
+        id: restaurantId,
+        ownerId: ownerId,
+      },
+    });
+    if (!restaurant) {
+      throw new NotFoundException();
+    }
+    return restaurant;
   }
 }

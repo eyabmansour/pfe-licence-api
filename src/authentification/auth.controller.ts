@@ -55,7 +55,7 @@ export class AuthController {
   @MinRole(UserRole.ADMINISTRATOR)
   async updateUserRole(
     @Param('id') userId: number,
-    @Param() newRoleCode: RoleCodeEnum,
+    @Body() newRoleCode: RoleCodeEnum,
     @Res() response: Response,
   ): Promise<any> {
     try {

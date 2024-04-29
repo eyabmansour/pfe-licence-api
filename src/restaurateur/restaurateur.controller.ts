@@ -55,4 +55,12 @@ export class RestaurateurController {
   ): Promise<RestaurantRequest> {
     return this.restaurateurService.updateRestaurantStatus(requestId, status);
   }
+  @Patch('/switch/:id')
+  @MinRole(UserRole.RESTAURATEUR)
+  async switchRestaurant(
+    @Param('id') ownerId: number,
+    @Body('restaurantId') restaurantId: number,
+  ): Promise<Restaurant> {
+    return this.restaurateurService.switchRestaurant(ownerId, restaurantId);
+  }
 }
