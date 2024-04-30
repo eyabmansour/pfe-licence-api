@@ -6,12 +6,15 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { RegisterRestaurantDto } from './dto/RegisterRestaurantDto';
 import {
+  Menu,
   Prisma,
   Restaurant,
   RestaurantRequest,
   RestaurantStatus,
 } from '@prisma/client';
 import { validate } from 'class-validator';
+import { MenuDto } from './dto/MenuDto';
+import { MenuItemDto } from './dto/MenuItemDto';
 
 @Injectable()
 export class RestaurateurService {
@@ -110,5 +113,48 @@ export class RestaurateurService {
       throw new NotFoundException();
     }
     return restaurant;
+  }
+  async createMenu(restaurantId: number, menuDto: MenuDto): Promise<Menu> {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: {
+        id: restaurantId,
+      },
+    });
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+    if (restaurant.status !== RestaurantStatus.APPROVED) {
+      throw new BadRequestException('Restaurant must be approved by admin');
+    }
+    const menu = await this.prisma.menu.create({
+      data: {
+        name: menuDto.name,
+        description: menuDto.description,
+        restaurant: { connect: { id: restaurantId } },
+      },
+    });
+    return menu;
+  }
+  async addMenuItemToMenu(
+    MenuId: number,
+    menuItemDto: MenuItemDto,
+  ): Promise<any> {
+    const menu = await this.prisma.menu.findUnique({
+      where: { id: MenuId },
+      include: { restaurant: true },
+    });
+    if (!menu) {
+      throw new NotFoundException('Menu Not Found');
+    }
+    const menuItem = await this.prisma.menuItem.create({
+      data: {
+        name: menuItemDto.name,
+        description: menuItemDto.description,
+        price: menuItemDto.price,
+        menu: { connect: { id: MenuId } },
+        restaurant: { connect: { id: menu.restaurant.id } },
+      },
+    });
+    return menuItem;
   }
 }

@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get, Patch, Param } from '@nestjs/common';
 import { RestaurateurService } from './restaurateur.service';
 import {
+  Menu,
   Restaurant,
   RestaurantRequest,
   RestaurantStatus,
@@ -9,6 +10,8 @@ import { RegisterRestaurantDto } from './dto/RegisterRestaurantDto';
 import { SubmitRestaurantRequestDto } from './dto/SubmitRestaurantRequestDto';
 import { MinRole } from 'src/roles/min-role.decorator';
 import { UserRole } from 'src/roles/user-role.model';
+import { MenuDto } from './dto/MenuDto';
+import { MenuItemDto } from './dto/MenuItemDto';
 
 @Controller('restaurants')
 export class RestaurateurController {
@@ -62,5 +65,21 @@ export class RestaurateurController {
     @Body('restaurantId') restaurantId: number,
   ): Promise<Restaurant> {
     return this.restaurateurService.switchRestaurant(ownerId, restaurantId);
+  }
+  @Post(':id/menus')
+  @MinRole(UserRole.RESTAURATEUR)
+  async createMenu(
+    @Param('id') restaurantId: number,
+    @Body() menuDto: MenuDto,
+  ): Promise<Menu> {
+    return this.restaurateurService.createMenu(restaurantId, menuDto);
+  }
+  @Post('menus/:id/menuItems')
+  @MinRole(UserRole.RESTAURATEUR)
+  async addMenuItemToMenu(
+    @Param('id') menuId: number,
+    @Body() menuItemDto: MenuItemDto,
+  ): Promise<any> {
+    return this.restaurateurService.addMenuItemToMenu(menuId, menuItemDto);
   }
 }
