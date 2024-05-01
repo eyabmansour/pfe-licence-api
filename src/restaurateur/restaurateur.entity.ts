@@ -1,8 +1,7 @@
-import { Restaurant } from '@prisma/client';
+import { Menu, MenuItem, Restaurant } from '@prisma/client';
 
-export class Restaurateur {
-  id: number;
-  name: string;
-  email: string;
-  restaurants: Restaurant[];
+export class entityType {
+  menu: Menu[];
+  menuItem: MenuItem[];
+  restaurant: Restaurant[];
 }

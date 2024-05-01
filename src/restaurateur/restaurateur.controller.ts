@@ -1,4 +1,16 @@
-import { Controller, Post, Body, Get, Patch, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Patch,
+  Param,
+  UseInterceptors,
+  UploadedFile,
+  Delete,
+  BadRequestException,
+  Put,
+} from '@nestjs/common';
 import { RestaurateurService } from './restaurateur.service';
 import {
   Menu,
@@ -12,6 +24,8 @@ import { MinRole } from 'src/roles/min-role.decorator';
 import { UserRole } from 'src/roles/user-role.model';
 import { MenuDto } from './dto/MenuDto';
 import { MenuItemDto } from './dto/MenuItemDto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { multerConfig } from './Multer/multer.config';
 
 @Controller('restaurants')
 export class RestaurateurController {
@@ -81,5 +95,47 @@ export class RestaurateurController {
     @Body() menuItemDto: MenuItemDto,
   ): Promise<any> {
     return this.restaurateurService.addMenuItemToMenu(menuId, menuItemDto);
+  }
+  @Post(':entityType/:entityId/images')
+  @UseInterceptors(FileInterceptor('image'))
+  async uploadImage(
+    @Param('entityType') entityType: 'Restaurant' | 'Menu' | 'MenuItem',
+    @Param('entityId') entityId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const imageUrl = file.path;
+    await this.restaurateurService.uploadImage(entityType, entityId, imageUrl);
+    return { message: 'Image uploaded successfully', imageUrl };
+  }
+  @Delete(':entityType/:entityId/images')
+  async deleteImage(
+    @Param('entityType') entityType: 'Restaurant' | 'Menu' | 'MenuItem',
+    @Param('entityId') entityId: number,
+  ) {
+    try {
+      await this.restaurateurService.deleteImage(entityType, entityId);
+      return { message: 'Image deleted successfully' };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+  @Put(':entityType/:entityId/image')
+  @UseInterceptors(FileInterceptor('image', multerConfig))
+  async updateImage(
+    @Param('entityType') entityType: 'Restaurant' | 'Menu' | 'MenuItem',
+    @Param('entityId') entityId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    try {
+      const imageUrl = file.path;
+      await this.restaurateurService.updateImage(
+        entityType,
+        entityId,
+        imageUrl,
+      );
+      return { message: 'Image updated successfully', imageUrl };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 }

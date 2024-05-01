@@ -46,6 +46,7 @@ model Restaurant {
   email        String
   openingHours String
   cuisineType  String
+  imageUrl     String?
   menuItems    MenuItem[]
   menu         Menu[]
   status       RestaurantStatus
@@ -61,6 +62,7 @@ model Menu {
   restaurant    Restaurant @relation(fields: [restaurant_id], references: [id])
   restaurant_id Int
   menuItems     MenuItem[]
+  imageUrl      String?
 }
 
 model MenuItem {
@@ -72,6 +74,7 @@ model MenuItem {
   restaurant_id Int
   menu_id       Int?
   menu          Menu?      @relation(fields: [menu_id], references: [id])
+  imageUrl      String?
 }
 
 enum RestaurantStatus {
