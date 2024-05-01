@@ -220,37 +220,4 @@ export class RestaurateurService {
       throw new Error('Failed to delete image');
     }
   }
-  async updateImage(
-    entityType: 'Restaurant' | 'Menu' | 'MenuItem',
-    entityId: number,
-    newImageUrl: string,
-  ): Promise<void> {
-    try {
-      switch (entityType) {
-        case 'Restaurant':
-          await this.prisma.restaurant.update({
-            where: { id: entityId },
-            data: { imageUrl: newImageUrl },
-          });
-          break;
-        case 'Menu':
-          await this.prisma.menu.update({
-            where: { id: entityId },
-            data: { imageUrl: newImageUrl },
-          });
-          break;
-        case 'MenuItem':
-          await this.prisma.menuItem.update({
-            where: { id: entityId },
-            data: { imageUrl: newImageUrl },
-          });
-          break;
-        default:
-          throw new Error('Invalid entity type');
-      }
-    } catch (error) {
-      console.error('Error updating image:', error);
-      throw new Error('Failed to update image');
-    }
-  }
 }

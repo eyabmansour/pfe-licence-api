@@ -37,7 +37,8 @@ export class RestaurateurController {
   ): Promise<Restaurant> {
     return this.restaurateurService.register(restaurantData, ownerId);
   }
-  @Get('user/:userId/restaurants')
+  @Get('users/:userId/restaurants')
+  @MinRole(UserRole.ADMINISTRATOR)
   async getUserRestaurants(@Param('userId') userId: number): Promise<any> {
     try {
       const userRestaurants =
@@ -97,7 +98,7 @@ export class RestaurateurController {
     return this.restaurateurService.addMenuItemToMenu(menuId, menuItemDto);
   }
   @Post(':entityType/:entityId/images')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', multerConfig))
   async uploadImage(
     @Param('entityType') entityType: 'Restaurant' | 'Menu' | 'MenuItem',
     @Param('entityId') entityId: number,
@@ -128,7 +129,7 @@ export class RestaurateurController {
   ) {
     try {
       const imageUrl = file.path;
-      await this.restaurateurService.updateImage(
+      await this.restaurateurService.uploadImage(
         entityType,
         entityId,
         imageUrl,
