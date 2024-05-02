@@ -40,41 +40,27 @@ export class AuthService {
   }
 
   async register(createDto: RegisterUsersDto): Promise<any> {
-    try {
-      // Create a user object
-      const createUser = new User();
-      createUser.username = createDto.username;
-      createUser.email = createDto.email;
-      createUser.password = await bcrypt.hash(createDto.password, 10);
-
-      // Retrieve the default role
-      const defaultRole = await this.prismaService.role.findUnique({
-        where: { code: RoleCodeEnum.CLIENT },
-      });
-
-      // Check if the default role exists
-      if (!defaultRole) {
-        throw new Error(`Default role with code ${defaultRole} not found.`);
-      }
-
-      // Assign the default role to the user
-      const userWithRole = {
-        ...createUser,
-        role: { connect: { id: defaultRole.id } },
-      };
-
-      // Create the user with the assigned role
-      const createdUser = await this.usersService.createUser(userWithRole);
-
-      // Generate JWT token for the user
-      const payload: IJwtPayload = { username: createdUser.username };
-      const token = this.jwtService.sign(payload);
-
-      return { token };
-    } catch (error) {
-      console.error('Error during user registration:', error);
-      throw new InternalServerErrorException('Failed to register user');
+    const createUser = new User();
+    createUser.username = createDto.username;
+    createUser.email = createDto.email;
+    createUser.password = await bcrypt.hash(createDto.password, 10);
+    const defaultRole = await this.prismaService.role.findUnique({
+      where: { code: RoleCodeEnum.CLIENT },
+    });
+    if (!defaultRole) {
+      throw new Error(`Default role with code ${defaultRole} not found.`);
     }
+    const userWithRole = {
+      ...createUser,
+      role: { connect: { id: defaultRole.id } },
+    };
+
+    const createdUser = await this.usersService.createUser(userWithRole);
+
+    const payload: IJwtPayload = { username: createdUser.username };
+    const token = this.jwtService.sign(payload);
+
+    return { token };
   }
   async updateUserRole(
     userId: number,
@@ -105,11 +91,7 @@ export class AuthService {
 
   async validateToken(token: string, minRoleWeight?: number): Promise<User> {
     let payload: IJwtPayload;
-    try {
-      payload = this.jwtService.decode<IJwtPayload>(token);
-    } catch (error) {
-      throw new UnauthorizedException();
-    }
+    payload = this.jwtService.decode<IJwtPayload>(token);
     const user = await this.prismaService.user.findUnique({
       where: { username: payload.username },
       include: { role: true },
@@ -117,13 +99,11 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException();
     }
-
     if (minRoleWeight) {
       if (!user.role || minRoleWeight > user.role.weight) {
         throw new ForbiddenException();
       }
     }
-
     return user;
   }
 }

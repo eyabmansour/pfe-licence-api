@@ -9,6 +9,8 @@ import {
   Res,
   Req,
   UseGuards,
+  HttpException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Request, Response } from 'express';
@@ -18,7 +20,6 @@ import { User } from './users.model';
 import { MinRole } from 'src/roles/min-role.decorator';
 
 @Controller('users')
-@UseGuards(AuthGuard)
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
@@ -27,38 +28,22 @@ export class UsersController {
     @Req() request: Request,
     @Res() response: Response,
   ): Promise<any> {
-    try {
-      const result = await this.userService.getAllUser();
-      return response.status(200).json({
-        status: 'Ok!',
-        message: 'Successfully fetch data!',
-        result: result,
-      });
-    } catch (err) {
-      return response.status(500).json({
-        status: 'ERROR!',
-        message: 'internal Server Error',
-      });
-    }
+    const result = await this.userService.getAllUser();
+    return response.status(200).json({
+      status: 'Ok!',
+      message: 'Successfully fetch data!',
+      result: result,
+    });
   }
-
   @Post()
   @MinRole(UserRole.ADMINISTRATOR)
   async createUser(
     @Body() userData: User,
     @Res() response: Response,
   ): Promise<any> {
-    try {
-      const newUser = await this.userService.createUser(userData);
-      return response.status(201).json(newUser);
-    } catch (err) {
-      return response.status(500).json({
-        status: 'ERROR!',
-        message: 'Internal Server Error',
-      });
-    }
+    const newUser = await this.userService.createUser(userData);
+    return response.status(201).json(newUser);
   }
-
   @Put(':id')
   @MinRole(UserRole.ADMINISTRATOR)
   async updateUser(
@@ -66,21 +51,14 @@ export class UsersController {
     @Body() userData: User,
     @Res() response: Response,
   ): Promise<any> {
-    try {
-      const updatedUser = await this.userService.updateUser(userId, userData);
-      if (!updatedUser) {
-        return response.status(404).json({
-          status: 'ERROR!',
-          message: 'User not found',
-        });
-      }
-      return response.status(200).json(updatedUser);
-    } catch (err) {
-      return response.status(500).json({
+    const updatedUser = await this.userService.updateUser(userId, userData);
+    if (!updatedUser) {
+      return response.status(404).json({
         status: 'ERROR!',
-        message: 'Internal Server Error',
+        message: 'User not found',
       });
     }
+    return response.status(200).json(updatedUser);
   }
   @Delete(':id')
   @MinRole(UserRole.ADMINISTRATOR) // Only administrators can delete users
@@ -88,23 +66,16 @@ export class UsersController {
     @Param('id') userId: number,
     @Res() response: Response,
   ): Promise<any> {
-    try {
-      const deleted = await this.userService.deleteUser(userId);
-      if (!deleted) {
-        return response.status(404).json({
-          status: 'ERROR!',
-          message: 'User not found',
-        });
-      }
-      return response.status(200).json({
-        status: 'OK!',
-        message: 'User deleted successfully',
-      });
-    } catch (err) {
-      return response.status(500).json({
+    const deleted = await this.userService.deleteUser(userId);
+    if (!deleted) {
+      return response.status(404).json({
         status: 'ERROR!',
-        message: 'Internal Server Error',
+        message: 'User not found',
       });
     }
+    return response.status(200).json({
+      status: 'OK!',
+      message: 'User deleted successfully',
+    });
   }
 }

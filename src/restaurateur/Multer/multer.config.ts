@@ -1,9 +1,9 @@
-import { extname } from 'path';
 import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 export const multerConfig = {
   storage: diskStorage({
-    destination: './uploads',
+    destination: './public/uploads',
     filename: (req, file, cb) => {
       const randomName = Array(32)
         .fill(null)

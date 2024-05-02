@@ -1,5 +1,6 @@
 import { PrismaClient, RoleCodeEnum } from '@prisma/client';
 import { UserRole } from '../src/roles/user-role.model';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 async function main() {
@@ -55,13 +56,15 @@ async function main() {
     },
   });
 
+  const hash = await bcrypt.hash('eya123', 10);
+
   await prisma.user.upsert({
     where: { email: 'eyabms452@gmail.com' },
     update: {},
     create: {
       username: 'eyabms',
       email: 'eyabms452@gmail.com',
-      password: 'eya123',
+      password: hash,
       role: {
         connect: { code: RoleCodeEnum.ADMINISTRATOR },
       },

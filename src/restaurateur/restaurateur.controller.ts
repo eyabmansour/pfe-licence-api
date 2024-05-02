@@ -10,6 +10,7 @@ import {
   Delete,
   BadRequestException,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { RestaurateurService } from './restaurateur.service';
 import {
@@ -17,6 +18,7 @@ import {
   Restaurant,
   RestaurantRequest,
   RestaurantStatus,
+  User,
 } from '@prisma/client';
 import { RegisterRestaurantDto } from './dto/RegisterRestaurantDto';
 import { SubmitRestaurantRequestDto } from './dto/SubmitRestaurantRequestDto';
@@ -26,31 +28,29 @@ import { MenuDto } from './dto/MenuDto';
 import { MenuItemDto } from './dto/MenuItemDto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from './Multer/multer.config';
+import { AuthGuard } from 'src/authentification/auth.guard';
+import { ReqUser } from 'src/authentification/decorators/req-user.decorator';
 
 @Controller('restaurants')
+@UseGuards(AuthGuard)
 export class RestaurateurController {
   constructor(private readonly restaurateurService: RestaurateurService) {}
-  @Post('/register/:id')
+  @Post('/register')
   async register(
-    @Param('id') ownerId: number,
     @Body() restaurantData: RegisterRestaurantDto,
+    @ReqUser() user: User,
   ): Promise<Restaurant> {
-    return this.restaurateurService.register(restaurantData, ownerId);
+    return this.restaurateurService.register(restaurantData, user.id);
   }
   @Get('users/:userId/restaurants')
   @MinRole(UserRole.ADMINISTRATOR)
   async getUserRestaurants(@Param('userId') userId: number): Promise<any> {
-    try {
-      const userRestaurants =
-        await this.restaurateurService.getRestaurantsByUserId(userId);
-      return {
-        data: userRestaurants,
-        message: 'User restaurants fetched successfully',
-      };
-    } catch (error) {
-      console.error('Error fetching user restaurants:', error);
-      return { error: 'Failed to fetch user restaurants' };
-    }
+    const userRestaurants =
+      await this.restaurateurService.getRestaurantsByUserId(userId);
+    return {
+      data: userRestaurants,
+      message: 'User restaurants fetched successfully',
+    };
   }
   @Post('/request')
   @MinRole(UserRole.RESTAURATEUR)
@@ -113,30 +113,18 @@ export class RestaurateurController {
     @Param('entityType') entityType: 'Restaurant' | 'Menu' | 'MenuItem',
     @Param('entityId') entityId: number,
   ) {
-    try {
-      await this.restaurateurService.deleteImage(entityType, entityId);
-      return { message: 'Image deleted successfully' };
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
+    await this.restaurateurService.deleteImage(entityType, entityId);
+    return { message: 'Image deleted successfully' };
   }
   @Put(':entityType/:entityId/image')
   @UseInterceptors(FileInterceptor('image', multerConfig))
   async updateImage(
     @Param('entityType') entityType: 'Restaurant' | 'Menu' | 'MenuItem',
-    @Param('entityId') entityId: number,
+    @Param('entityId') entityId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    try {
-      const imageUrl = file.path;
-      await this.restaurateurService.uploadImage(
-        entityType,
-        entityId,
-        imageUrl,
-      );
-      return { message: 'Image updated successfully', imageUrl };
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
+    const imageUrl = file.path.replace('public', '');
+    await this.restaurateurService.uploadImage(entityType, +entityId, imageUrl);
+    return { message: 'Image updated successfully', imageUrl };
   }
 }
