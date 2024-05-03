@@ -17,6 +17,7 @@ import { validate } from 'class-validator';
 import { MenuDto } from './dto/MenuDto';
 import { MenuItemDto } from './dto/MenuItemDto';
 import { entityType } from './restaurateur.entity';
+import { SubmitRestaurantRequestDto } from './dto/SubmitRestaurantRequestDto';
 
 @Injectable()
 export class RestaurateurService {
@@ -51,25 +52,33 @@ export class RestaurateurService {
   async submitRestaurantRequest(
     restaurantId: number,
   ): Promise<RestaurantRequest> {
+    const existingRestaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+    if (!existingRestaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
     const request = await this.prisma.restaurantRequest.create({
       data: {
-        restaurant: { connect: { id: restaurantId } },
+        restaurant: {
+          connect: { id: restaurantId },
+        },
         status: RestaurantStatus.PENDING,
       },
     });
+    await this.prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: { status: RestaurantStatus.PENDING },
+    });
     return request;
   }
+
   async getPendingRestaurantRequests(): Promise<RestaurantRequest[]> {
-    try {
-      const requests = await this.prisma.restaurantRequest.findMany({
-        where: { status: RestaurantStatus.PENDING },
-        include: { restaurant: true },
-      });
-      return requests;
-    } catch (error) {
-      console.error('Error getting pending restaurant requests:', error);
-      throw new Error('Failed to get pending restaurant requests');
-    }
+    const requests = await this.prisma.restaurantRequest.findMany({
+      where: { status: RestaurantStatus.PENDING },
+      include: { restaurant: true },
+    });
+    return requests;
   }
   async updateRestaurantStatus(
     restaurantRequestId: number,
@@ -79,6 +88,12 @@ export class RestaurateurService {
       where: { id: restaurantRequestId },
       data: { status: newStatus },
       include: { restaurant: true },
+    });
+    const restaurantId = updatedRequest.restaurant.id;
+
+    await this.prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: { status: newStatus },
     });
     return updatedRequest;
   }

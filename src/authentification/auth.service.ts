@@ -12,7 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { RegisterUsersDto } from './dto/register-user.dto';
 import { User } from 'src/users/users.model';
 import { IJwtPayload } from './interfaces/jwt-payload.interface';
-import { RoleCodeEnum } from '@prisma/client';
+import { $Enums, RoleCodeEnum } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -64,7 +64,7 @@ export class AuthService {
   }
   async updateUserRole(
     userId: number,
-    newRoleCode: RoleCodeEnum,
+    newRoleCode: $Enums.RoleCodeEnum,
   ): Promise<any> {
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },

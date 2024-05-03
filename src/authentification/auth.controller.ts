@@ -50,12 +50,12 @@ export class AuthController {
   @Put(':id')
   @MinRole(UserRole.ADMINISTRATOR)
   async updateUserRole(
-    @Param('id') userId: number,
+    @Param('id') userId: string,
     @Body() newRoleCode: RoleCodeEnum,
     @Res() response: Response,
   ): Promise<any> {
     const updateUserRole = await this.authService.updateUserRole(
-      userId,
+      +userId,
       newRoleCode,
     );
     if (!updateUserRole) {

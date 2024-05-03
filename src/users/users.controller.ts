@@ -61,7 +61,7 @@ export class UsersController {
     return response.status(200).json(updatedUser);
   }
   @Delete(':id')
-  @MinRole(UserRole.ADMINISTRATOR) // Only administrators can delete users
+  @MinRole(UserRole.ADMINISTRATOR)
   async deleteUser(
     @Param('id') userId: number,
     @Res() response: Response,

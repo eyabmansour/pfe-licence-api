@@ -44,9 +44,9 @@ export class RestaurateurController {
   }
   @Get('users/:userId/restaurants')
   @MinRole(UserRole.ADMINISTRATOR)
-  async getUserRestaurants(@Param('userId') userId: number): Promise<any> {
+  async getUserRestaurants(@Param('userId') userId: string): Promise<any> {
     const userRestaurants =
-      await this.restaurateurService.getRestaurantsByUserId(userId);
+      await this.restaurateurService.getRestaurantsByUserId(+userId);
     return {
       data: userRestaurants,
       message: 'User restaurants fetched successfully',
@@ -68,52 +68,52 @@ export class RestaurateurController {
   @Patch('/request/:id/status/:status')
   @MinRole(UserRole.ADMINISTRATOR)
   async updateStatus(
-    @Param('id') requestId: number,
+    @Param('id') requestId: string,
     @Param('status') status: RestaurantStatus,
   ): Promise<RestaurantRequest> {
-    return this.restaurateurService.updateRestaurantStatus(requestId, status);
+    return this.restaurateurService.updateRestaurantStatus(+requestId, status);
   }
   @Patch('/switch/:id')
   @MinRole(UserRole.RESTAURATEUR)
   async switchRestaurant(
-    @Param('id') ownerId: number,
+    @Param('id') ownerId: string,
     @Body('restaurantId') restaurantId: number,
   ): Promise<Restaurant> {
-    return this.restaurateurService.switchRestaurant(ownerId, restaurantId);
+    return this.restaurateurService.switchRestaurant(+ownerId, restaurantId);
   }
   @Post(':id/menus')
   @MinRole(UserRole.RESTAURATEUR)
   async createMenu(
-    @Param('id') restaurantId: number,
+    @Param('id') restaurantId: string,
     @Body() menuDto: MenuDto,
   ): Promise<Menu> {
-    return this.restaurateurService.createMenu(restaurantId, menuDto);
+    return this.restaurateurService.createMenu(+restaurantId, menuDto);
   }
   @Post('menus/:id/menuItems')
   @MinRole(UserRole.RESTAURATEUR)
   async addMenuItemToMenu(
-    @Param('id') menuId: number,
+    @Param('id') menuId: string,
     @Body() menuItemDto: MenuItemDto,
   ): Promise<any> {
-    return this.restaurateurService.addMenuItemToMenu(menuId, menuItemDto);
+    return this.restaurateurService.addMenuItemToMenu(+menuId, menuItemDto);
   }
   @Post(':entityType/:entityId/images')
   @UseInterceptors(FileInterceptor('image', multerConfig))
   async uploadImage(
     @Param('entityType') entityType: 'Restaurant' | 'Menu' | 'MenuItem',
-    @Param('entityId') entityId: number,
+    @Param('entityId') entityId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const imageUrl = file.path;
-    await this.restaurateurService.uploadImage(entityType, entityId, imageUrl);
+    await this.restaurateurService.uploadImage(entityType, +entityId, imageUrl);
     return { message: 'Image uploaded successfully', imageUrl };
   }
   @Delete(':entityType/:entityId/images')
   async deleteImage(
     @Param('entityType') entityType: 'Restaurant' | 'Menu' | 'MenuItem',
-    @Param('entityId') entityId: number,
+    @Param('entityId') entityId: string,
   ) {
-    await this.restaurateurService.deleteImage(entityType, entityId);
+    await this.restaurateurService.deleteImage(entityType, +entityId);
     return { message: 'Image deleted successfully' };
   }
   @Put(':entityType/:entityId/image')
