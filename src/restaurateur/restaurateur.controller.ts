@@ -8,7 +8,6 @@ import {
   UseInterceptors,
   UploadedFile,
   Delete,
-  BadRequestException,
   Put,
   UseGuards,
 } from '@nestjs/common';
@@ -42,6 +41,11 @@ export class RestaurateurController {
   ): Promise<Restaurant> {
     return this.restaurateurService.register(restaurantData, user.id);
   }
+  @Get()
+  @MinRole(UserRole.ADMINISTRATOR)
+  async getAllRestaurants(): Promise<Restaurant[]> {
+    return this.restaurateurService.getAllRestaurants();
+  }
   @Get('users/:userId/restaurants')
   @MinRole(UserRole.ADMINISTRATOR)
   async getUserRestaurants(@Param('userId') userId: string): Promise<any> {
@@ -53,7 +57,6 @@ export class RestaurateurController {
     };
   }
   @Post('/request')
-  @MinRole(UserRole.RESTAURATEUR)
   async submitRequest(
     @Body() requestData: SubmitRestaurantRequestDto,
   ): Promise<RestaurantRequest> {
@@ -74,7 +77,6 @@ export class RestaurateurController {
     return this.restaurateurService.updateRestaurantStatus(+requestId, status);
   }
   @Patch('/switch/:id')
-  @MinRole(UserRole.RESTAURATEUR)
   async switchRestaurant(
     @Param('id') ownerId: string,
     @Body('restaurantId') restaurantId: number,
@@ -82,7 +84,6 @@ export class RestaurateurController {
     return this.restaurateurService.switchRestaurant(+ownerId, restaurantId);
   }
   @Post(':id/menus')
-  @MinRole(UserRole.RESTAURATEUR)
   async createMenu(
     @Param('id') restaurantId: string,
     @Body() menuDto: MenuDto,
@@ -90,7 +91,6 @@ export class RestaurateurController {
     return this.restaurateurService.createMenu(+restaurantId, menuDto);
   }
   @Post('menus/:id/menuItems')
-  @MinRole(UserRole.RESTAURATEUR)
   async addMenuItemToMenu(
     @Param('id') menuId: string,
     @Body() menuItemDto: MenuItemDto,

@@ -47,11 +47,11 @@ export class UsersController {
   @Put(':id')
   @MinRole(UserRole.ADMINISTRATOR)
   async updateUser(
-    @Param('id') userId: number,
+    @Param('id') userId: string,
     @Body() userData: User,
     @Res() response: Response,
   ): Promise<any> {
-    const updatedUser = await this.userService.updateUser(userId, userData);
+    const updatedUser = await this.userService.updateUser(+userId, userData);
     if (!updatedUser) {
       return response.status(404).json({
         status: 'ERROR!',
@@ -63,10 +63,10 @@ export class UsersController {
   @Delete(':id')
   @MinRole(UserRole.ADMINISTRATOR)
   async deleteUser(
-    @Param('id') userId: number,
+    @Param('id') userId: string,
     @Res() response: Response,
   ): Promise<any> {
-    const deleted = await this.userService.deleteUser(userId);
+    const deleted = await this.userService.deleteUser(+userId);
     if (!deleted) {
       return response.status(404).json({
         status: 'ERROR!',

@@ -9,6 +9,5 @@ export class MenuItemDto {
   description: string;
 
   @IsNotEmpty()
-  @IsNumber()
   price: number;
 }
