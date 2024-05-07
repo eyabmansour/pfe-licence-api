@@ -5,6 +5,7 @@ import { RestaurateurModule } from './restaurateur/restaurateur.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ClientModule } from './Client/client.module';
+import { ReferralModule } from './Client/code/parrainage.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ClientModule } from './Client/client.module';
     AuthModule,
     RestaurateurModule,
     ClientModule,
+    ReferralModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'public'),
     }),
