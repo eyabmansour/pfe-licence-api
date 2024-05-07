@@ -14,12 +14,8 @@ export class RestaurantQueryDto {
   sortOrder?: 'asc' | 'desc';
 
   @IsOptional()
-  @IsString()
-  cuisineType: string;
+  menu?: boolean;
 
   @IsOptional()
-  menu: boolean;
-
-  @IsOptional()
-  menuItem: boolean;
+  menuItem?: boolean;
 }

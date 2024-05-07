@@ -41,13 +41,34 @@ export class RestaurateurService {
     });
     return createRestaurant;
   }
-  async getAllRestaurants(): Promise<Restaurant[]> {
-    const restaurants = await this.prisma.restaurant.findMany();
-    if (!restaurants || restaurants.length === 0) {
-      throw new NotFoundException('Aucun restaurant trouvé.');
+  async getEntities(
+    entityType: 'restaurant' | 'menu' | 'menuItem',
+  ): Promise<any[]> {
+    let entities;
+
+    switch (entityType) {
+      case 'restaurant':
+        entities = await this.prisma.restaurant.findMany();
+        break;
+      case 'menu':
+        entities = await this.prisma.menu.findMany();
+        break;
+      case 'menuItem':
+        entities = await this.prisma.menuItem.findMany();
+        break;
+      default:
+        throw new NotFoundException("Type d'entité non valide");
     }
-    return restaurants;
+
+    if (!entities || entities.length === 0) {
+      throw new NotFoundException(
+        `Aucun ${entityType === 'menuItem' ? 'élément de menu' : entityType} trouvé.`,
+      );
+    }
+
+    return entities;
   }
+
   async getRestaurantsByUserId(userId: number): Promise<any> {
     const userRestaurants = await this.prisma.user.findUnique({
       where: { id: userId },

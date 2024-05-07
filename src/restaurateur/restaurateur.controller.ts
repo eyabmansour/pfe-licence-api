@@ -41,10 +41,11 @@ export class RestaurateurController {
   ): Promise<Restaurant> {
     return this.restaurateurService.register(restaurantData, user.id);
   }
-  @Get()
-  @MinRole(UserRole.ADMINISTRATOR)
-  async getAllRestaurants(): Promise<Restaurant[]> {
-    return this.restaurateurService.getAllRestaurants();
+  @Get('/:entityType')
+  async getEntities(
+    @Param('entityType') entityType: 'restaurant' | 'menu' | 'menuItem',
+  ): Promise<any[]> {
+    return this.restaurateurService.getEntities(entityType);
   }
   @Get('users/:userId/restaurants')
   @MinRole(UserRole.ADMINISTRATOR)
@@ -56,6 +57,7 @@ export class RestaurateurController {
       message: 'User restaurants fetched successfully',
     };
   }
+
   @Post('/request')
   async submitRequest(
     @Body() requestData: SubmitRestaurantRequestDto,

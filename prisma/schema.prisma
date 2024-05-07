@@ -18,9 +18,10 @@ model User {
   email       String       @unique
   username    String       @unique
   password    String
-  role_id     Int?
   role        Role?        @relation(fields: [role_id], references: [id])
+  role_id     Int?
   restaurants Restaurant[]
+  orders      Order[]
 }
 
 model Role {
@@ -75,6 +76,7 @@ model MenuItem {
   menu_id       Int?
   menu          Menu?      @relation(fields: [menu_id], references: [id])
   imageUrl      String?
+  order         Order[]
 }
 
 enum RestaurantStatus {
@@ -90,4 +92,22 @@ model RestaurantRequest {
   restaurant    Restaurant       @relation(fields: [restaurant_id], references: [id])
   restaurant_id Int
   status        RestaurantStatus @default(DRAFT)
+}
+
+model Order {
+  id                    Int        @id @default(autoincrement())
+  userId                Int
+  user                  User       @relation(fields: [userId], references: [id])
+  items                 MenuItem[]
+  totalPrice            Float
+  deliveryAddress       String?
+  deliveryInstructions  String?
+  discountCode          String?
+  customerNotes         String?
+  deliveryMethod        String?
+  paymentStatus         String
+  paymentMethod         String?
+  estimatedDeliveryDate DateTime?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
 }

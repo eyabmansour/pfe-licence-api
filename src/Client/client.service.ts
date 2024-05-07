@@ -1,50 +1,126 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { Menu, MenuItem, Restaurant, RestaurantStatus } from '@prisma/client';
+import { Menu, Order, Restaurant, RestaurantStatus } from '@prisma/client';
 import { RestaurantQueryDto } from './dto/client.dto';
+import { CreateOrderDto } from './dto/client-order.dto';
 
 @Injectable()
 export class ClientService {
   constructor(private readonly prisma: PrismaService) {}
-
   async search(queryDto: RestaurantQueryDto): Promise<any> {
-    const { search, sortBy, sortOrder, menu, menuItem, cuisineType } = queryDto;
-    let restaurants: Restaurant[] = [];
+    const {
+      search,
+      sortBy = 'name',
+      sortOrder = 'asc',
+      menu,
+      menuItem,
+    } = queryDto;
+    const restaurantQuery = {
+      where: {
+        status: RestaurantStatus.APPROVED,
+        OR: [
+          { name: { contains: search || '' } },
+          { address: { contains: search || '' } },
+          { cuisineType: { contains: search || '' } },
+        ],
+      },
+      orderBy: { [sortBy]: sortOrder },
+    };
+    const restaurants = await this.prisma.restaurant.findMany({
+      ...restaurantQuery,
+    });
 
-    // Vérifier s'il y a des critères de recherche de menu
-    if (menu || menuItem) {
-      // Si des critères de menu sont spécifiés, effectuez une recherche avec les menus et les éléments de menu
-      restaurants = await this.prisma.restaurant.findMany({
+    if (menu) {
+      const menus = await this.prisma.menu.findMany({
+        ...restaurantQuery,
         where: {
-          status: RestaurantStatus.APPROVED,
           OR: [
             { name: { contains: search || '' } },
-            { address: { contains: search || '' } },
+            { description: { contains: search || '' } },
           ],
         },
-        orderBy: { [sortBy || 'name']: sortOrder || 'asc' },
         include: {
-          menu: {
-            include: {
-              menuItems: true,
-            },
-          },
+          menuItems: true,
         },
       });
-    } else {
-      // Si aucun critère de menu n'est spécifié, renvoyez uniquement les restaurants
-      restaurants = await this.prisma.restaurant.findMany({
-        where: {
-          status: RestaurantStatus.APPROVED,
-          OR: [
-            { name: { contains: search || '' } },
-            { address: { contains: search || '' } },
-          ],
-        },
-        orderBy: { [sortBy || 'name']: sortOrder || 'asc' },
-      });
+      return { menus };
     }
 
-    return restaurants;
+    if (menuItem) {
+      const menuItems = await this.prisma.menuItem.findMany({
+        ...restaurantQuery,
+        where: {
+          OR: [
+            { name: { contains: search || '' } },
+            { description: { contains: search || '' } },
+          ],
+        },
+      });
+      return { menuItems };
+    }
+    return { restaurants };
+  }
+  async getMenuById(menuId: number): Promise<Menu> {
+    return await this.prisma.menu.findUnique({
+      where: { id: menuId },
+      include: { menuItems: true },
+    });
+  }
+  async createOrder(
+    userId: number,
+    orderDetails: CreateOrderDto,
+  ): Promise<Order> {
+    // Vérifier si l'utilisateur existe
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Vérifier si les articles commandés existent dans le menu
+    const menuItems = await this.prisma.menuItem.findMany({
+      where: { id: { in: orderDetails.itemIds } },
+    });
+    if (menuItems.length !== orderDetails.itemIds.length) {
+      throw new BadRequestException('One or more items not found in the menu');
+    }
+
+    // Calculer le total à payer
+    const totalPrice = menuItems.reduce((total, item) => total + item.price, 0);
+
+    // Créer la commande
+    const order = await this.prisma.order.create({
+      data: {
+        user: { connect: { id: userId } },
+        items: {
+          connect: orderDetails.itemIds.map((itemId) => ({ id: itemId })),
+        },
+        totalPrice,
+        deliveryAddress: orderDetails.deliveryAddress,
+        deliveryInstructions: orderDetails.deliveryInstructions,
+        discountCode: orderDetails.discountCode,
+        customerNotes: orderDetails.customerNotes,
+        deliveryMethod: orderDetails.deliveryMethod,
+        paymentStatus: 'Pending',
+        paymentMethod: orderDetails.paymentMethod,
+        estimatedDeliveryDate: orderDetails.estimatedDeliveryDate,
+      },
+    });
+    if (orderDetails.paymentMethod) {
+      await this.updatePaymentStatus(order.id, 'Paid');
+    }
+
+    return order;
+  }
+  async updatePaymentStatus(orderId: number, status: string): Promise<void> {
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: status },
+    });
   }
 }
