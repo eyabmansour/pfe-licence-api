@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Req,
-  Res,
-  Put,
-  Param,
-  HttpException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Controller, Post, Body, Req, Res, Put, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login-user.dto';
 import { Request, Response } from 'express';
@@ -16,9 +6,13 @@ import { RegisterUsersDto } from './dto/register-user.dto';
 import { RoleCodeEnum } from '@prisma/client';
 import { MinRole } from 'src/roles/min-role.decorator';
 import { UserRole } from 'src/roles/user-role.model';
+import { MailService } from 'src/common/filters/MailService';
 @Controller('/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly mailService: MailService,
+  ) {}
 
   @Post('/login')
   async login(
@@ -40,13 +34,16 @@ export class AuthController {
     @Body() registerDto: RegisterUsersDto,
   ): Promise<any> {
     const result = await this.authService.register(registerDto);
+    await this.mailService.sendWelcomeEmail(
+      registerDto.email,
+      registerDto.username,
+    );
     return response.status(200).json({
       status: 'OK!',
       message: 'Successfully register users!',
       result: result,
     });
   }
-
   @Put(':id')
   @MinRole(UserRole.ADMINISTRATOR)
   async updateUserRole(

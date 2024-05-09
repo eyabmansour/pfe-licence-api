@@ -7,11 +7,18 @@ import { UsersService } from 'src/users/users.service';
 import { UsersModule } from 'src/users/users.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+import { MailService } from 'src/common/filters/MailService';
 
 @Global()
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, PrismaService, JwtStrategy, UsersService],
+  providers: [
+    AuthService,
+    PrismaService,
+    JwtStrategy,
+    UsersService,
+    MailService,
+  ],
   exports: [AuthService],
   imports: [
     UsersModule,
