@@ -10,137 +10,202 @@ import {
   DiscountApplicableTo,
   CustomerType,
 } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { CreateDiscountDto } from './dto/CreateDiscountDto ';
 import { UpdateDiscountDto } from './dto/UpdateDiscountDto';
+import { DiscountApplicableToDto } from './dto/discountApplicableDto';
+import { ClientService } from 'src/Client/client.service';
 
 @Injectable()
 export class DiscountService {
-  constructor(private readonly prisma: PrismaService) {}
-
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clientService: ClientService,
+  ) {}
   async createDiscount(
-    createDiscountDto: CreateDiscountDto,
+    CreateDiscountDto: CreateDiscountDto,
   ): Promise<Discount> {
-    const { startDate, endDate, type, applicableTo } = createDiscountDto;
-
-    // Vérifier si les dates de début et de fin sont valides
-    if (startDate && endDate && new Date(startDate) >= new Date(endDate)) {
-      throw new BadRequestException('End date must be after start date');
-    }
-    switch (type) {
-      case DiscountType.PERCENTAGE:
-        // Logique spécifique pour la remise en pourcentage
-        break;
-      case DiscountType.FIXED_AMOUNT:
-        // Logique spécifique pour le montant fixe de remise
-        break;
-      default:
-        throw new BadRequestException('Invalid discount type');
-    }
-    // Vérifier si la condition d'application de la réduction est valide
-    if (!this.isValidApplicableTo(applicableTo)) {
-      throw new BadRequestException('Invalid applicableTo');
-    }
-
-    // Créer la réduction
-    const discount = await this.prisma.discount.create({
+    const createDiscount = await this.prisma.discount.create({
       data: {
-        ...createDiscountDto,
+        ...CreateDiscountDto,
+      },
+    });
+    return createDiscount;
+  }
+  async updateDiscount(
+    discountId: number,
+    updateDiscountDto: UpdateDiscountDto,
+  ): Promise<Discount> {
+    const discount = await this.prisma.discount.findUnique({
+      where: { id: discountId },
+    });
+
+    if (!discount) {
+      throw new NotFoundException(`Discount with id ${discountId} not found`);
+    }
+
+    const updatedDiscount = await this.prisma.discount.update({
+      where: { id: discountId },
+      data: updateDiscountDto,
+    });
+
+    return updatedDiscount;
+  }
+  async DiscountApplicableTo(
+    menuItemId: number,
+    discountId: number,
+    discountApplicableToDto: DiscountApplicableToDto,
+  ): Promise<DiscountApplicableTo> {
+    const discount = await this.prisma.discount.findUnique({
+      where: { id: discountId },
+    });
+
+    if (!discount) {
+      throw new NotFoundException(`Discount with id ${discountId} not found`);
+    }
+    const menuItem = await this.prisma.menuItem.findUnique({
+      where: { id: menuItemId },
+    });
+    if (!menuItem) {
+      throw new NotFoundException(`MenuItem with id ${menuItemId} not found`);
+    }
+
+    const applicableTo = await this.prisma.discountApplicableTo.create({
+      data: {
+        ...discountApplicableToDto,
+        discount: { connect: { id: discountId } },
+        menuItem: { connect: { id: menuItemId } },
       },
     });
 
-    // Associer la réduction aux éléments de menu spécifiés
-    await this.updateDiscountApplicableTo(discount.id, applicableTo);
-
-    return discount;
-  }
-
-  async updateDiscount(
-    id: number,
-    updateDiscountDto: UpdateDiscountDto,
-  ): Promise<Discount> {
-    const { startDate, endDate, type, applicableTo } = updateDiscountDto;
-
-    // Vérifier si les dates de début et de fin sont valides
-    if (startDate && endDate && new Date(startDate) >= new Date(endDate)) {
-      throw new BadRequestException('End date must be after start date');
-    }
-    switch (type) {
-      case DiscountType.PERCENTAGE:
-        break;
-      case DiscountType.FIXED_AMOUNT:
-        break;
-      default:
-        throw new BadRequestException('Invalid discount type');
-    }
-    // Vérifier si la condition d'application de la réduction est valide
-    if (!this.isValidApplicableTo(applicableTo)) {
-      throw new BadRequestException('Invalid applicableTo');
-    }
-
-    // Mettre à jour la réduction
-    const discount = await this.findDiscountById(id);
-    await this.prisma.discount.update({
-      where: { id },
-      data: { ...updateDiscountDto },
-    });
-
-    // Mettre à jour les éléments de menu auxquels la réduction s'applique
-    await this.updateDiscountApplicableTo(id, applicableTo);
-
-    return discount;
-  }
-
-  async deleteDiscount(id: number): Promise<void> {
-    await this.findDiscountById(id);
-    await this.prisma.discount.delete({ where: { id } });
-  }
-
-  async getAllDiscounts(): Promise<Discount[]> {
-    return await this.prisma.discount.findMany();
-  }
-
-  async findDiscountById(id: number): Promise<Discount> {
-    const discount = await this.prisma.discount.findUnique({ where: { id } });
-    if (!discount) {
-      throw new NotFoundException('Discount not found');
-    }
-    return discount;
+    return applicableTo;
   }
 
   async updateDiscountApplicableTo(
+    discountApplicableToId: number,
+    discountApplicableToDto: DiscountApplicableToDto,
+  ): Promise<DiscountApplicableTo> {
+    const discountApplicableTo =
+      await this.prisma.discountApplicableTo.findUnique({
+        where: { id: discountApplicableToId },
+      });
+
+    if (!discountApplicableTo) {
+      throw new NotFoundException(
+        `DiscountApplicableTo with id ${discountApplicableToId} not found`,
+      );
+    }
+
+    const updatedDiscountApplicableTo =
+      await this.prisma.discountApplicableTo.update({
+        where: { id: discountApplicableToId },
+        data: discountApplicableToDto,
+      });
+
+    return updatedDiscountApplicableTo;
+  }
+  async applyDiscountToMenuItems(
     discountId: number,
-    applicableTo: DiscountApplicableTo[],
+    restaurantId: number,
+    discountApplicableToDto: DiscountApplicableToDto,
   ): Promise<void> {
-    // Supprimer toutes les associations précédentes
-    await this.prisma.discountApplicableTo.deleteMany({
-      where: { discountId },
+    // Récupérer tous les éléments de menu du restaurant
+    const menuItems = await this.prisma.menuItem.findMany({
+      where: {
+        restaurant_id: restaurantId,
+      },
     });
 
-    // Associer la réduction aux éléments de menu spécifiés
+    const discount = await this.prisma.discount.findUnique({
+      where: { id: discountId },
+    });
+
+    if (!discount) {
+      throw new NotFoundException(`Discount with id ${discountId} not found`);
+    }
+
+    // Créer une entrée dans DiscountApplicableTo pour chaque élément de menu
     await Promise.all(
-      applicableTo.map(
-        async ({ menuItemId, minQuantity, minAmount, customerType }) => {
-          await this.prisma.discountApplicableTo.create({
-            data: {
-              discountId,
-              menuItemId,
-              minQuantity,
-              minAmount,
-              customerType,
-            },
-          });
-        },
-      ),
+      menuItems.map(async (menuItem) => {
+        await this.prisma.discountApplicableTo.create({
+          data: {
+            ...discountApplicableToDto,
+            discount: { connect: { id: discountId } },
+            menuItem: { connect: { id: menuItem.id } },
+          },
+        });
+      }),
     );
   }
+  async deleteDiscount(discountId: number): Promise<void> {
+    const discount = await this.prisma.discount.findUnique({
+      where: { id: discountId },
+    });
+    if (!discount) {
+      throw new NotFoundException(`Discount with id ${discountId} not found`);
+    }
 
-  private isValidApplicableTo(applicableTo: DiscountApplicableTo[]): boolean {
-    return applicableTo.every(
-      ({ menuItemId, minQuantity, minAmount, customerType }) =>
-        menuItemId &&
-        minQuantity >= 0 &&
-        minAmount >= 0 &&
-        Object.values(CustomerType).includes(customerType),
+    await this.prisma.discount.delete({
+      where: { id: discountId },
+    });
+  }
+
+  async applyDiscountsToOrder(orderId: number): Promise<void> {
+    // Récupérer la commande
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with id ${orderId} not found`);
+    }
+
+    // Calculer le montant total initial de la commande en utilisant la méthode du service UtilService
+    const totalPrice = this.clientService.calculateTotalPrice(order.items);
+
+    // Appliquer les réductions
+    const discountedTotalPrice = await this.applyDiscounts(
+      await totalPrice,
+      order.userId,
     );
+
+    // Mettre à jour le montant total de la commande
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { totalPrice: discountedTotalPrice },
+    });
+  }
+  private async applyDiscounts(
+    totalPrice: number,
+    userId: number,
+  ): Promise<number> {
+    // Récupérer les réductions actives
+    const activeDiscounts = await this.prisma.discount.findMany({
+      where: {
+        isActive: true,
+        AND: [
+          { startDate: { lte: new Date() } }, // Vérifier si la date de début est antérieure ou égale à aujourd'hui
+          { endDate: { gte: new Date() } }, // Vérifier si la date de fin est postérieure ou égale à aujourd'hui
+        ],
+      },
+    });
+
+    // Appliquer les réductions
+    for (const discount of activeDiscounts) {
+      let discountValue = discount.value;
+
+      // Si le type de réduction est FIXED_AMOUNT, appliquer directement la valeur de la réduction
+      if (discount.type === DiscountType.FIXED_AMOUNT) {
+        totalPrice -= discountValue;
+      }
+
+      // Si le type de réduction est PERCENTAGE, ajuster la valeur de la réduction en pourcentage du montant total
+      if (discount.type === DiscountType.PERCENTAGE) {
+        discountValue = totalPrice * (discount.value / 100);
+        totalPrice -= discountValue;
+      }
+    }
+    return totalPrice;
   }
 }

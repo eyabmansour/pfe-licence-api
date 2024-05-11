@@ -1,8 +1,17 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ClientService } from './client.service';
 import { Menu, MenuItem, Restaurant } from '@prisma/client';
 import { RestaurantQueryDto } from './dto/client.dto';
 import { AuthGuard } from 'src/authentification/auth.guard';
+import { CreateOrderDto } from './dto/client-order.dto';
 
 @Controller('clients')
 @UseGuards(AuthGuard)
@@ -20,5 +29,12 @@ export class ClientController {
   @Get(':id')
   async getMenuById(@Param('id') menuId: string): Promise<Menu> {
     return await this.clientService.getMenuById(+menuId);
+  }
+  @Post('order/:userId')
+  async createOrder(
+    @Param() userId: string,
+    @Body() orderDetails: CreateOrderDto,
+  ): Promise<any> {
+    return await this.clientService.createOrder(+userId, orderDetails);
   }
 }

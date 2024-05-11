@@ -10,9 +10,10 @@ import {
 } from '@nestjs/common';
 import { DiscountService } from './discount.service';
 
-import { Discount } from '@prisma/client';
+import { Discount, DiscountApplicableTo, Prisma } from '@prisma/client';
 import { CreateDiscountDto } from './dto/CreateDiscountDto ';
-import { UpdateDiscountDto } from './dto/updateDiscountDto';
+import { DiscountApplicableToDto } from './dto/discountApplicableDto';
+import { UpdateDiscountDto } from './dto/UpdateDiscountDto';
 
 @Controller('discounts')
 export class DiscountController {
@@ -24,17 +25,6 @@ export class DiscountController {
   ): Promise<Discount> {
     return await this.discountService.createDiscount(createDiscountDto);
   }
-
-  @Get()
-  async getAllDiscounts(): Promise<Discount[]> {
-    return await this.discountService.getAllDiscounts();
-  }
-
-  @Get(':id')
-  async getDiscountById(@Param('id') id: string): Promise<Discount> {
-    return await this.discountService.findDiscountById(+id);
-  }
-
   @Put(':id')
   async updateDiscount(
     @Param('id') id: string,
@@ -42,9 +32,48 @@ export class DiscountController {
   ): Promise<Discount> {
     return await this.discountService.updateDiscount(+id, updateDiscountDto);
   }
-
-  @Delete(':id')
-  async deleteDiscount(@Param('id') id: string): Promise<void> {
-    await this.discountService.deleteDiscount(+id);
+  @Post('/applicable/:discountId/:menuItemId')
+  async discountApplicableTo(
+    @Param('discountId') discountId: string,
+    @Param('menuItemId') menuItemId: string,
+    @Body() ApplicableTo: DiscountApplicableToDto,
+  ): Promise<DiscountApplicableTo> {
+    return await this.discountService.DiscountApplicableTo(
+      +menuItemId,
+      +discountId,
+      ApplicableTo,
+    );
+  }
+  @Put('applicable/:id')
+  async updateDiscountApplicableTo(
+    @Param('id') id: string,
+    @Body() applicableTo: DiscountApplicableToDto,
+  ): Promise<DiscountApplicableTo> {
+    return await this.discountService.updateDiscountApplicableTo(
+      +id,
+      applicableTo,
+    );
+  }
+  @Post('/applicableToAll/:discountId/:restaurantId')
+  async applyDiscountToMenuItems(
+    @Param('discountId') discountId: string,
+    @Param('restaurantId') restaurantId: string,
+    @Body() applicableToAll: DiscountApplicableToDto,
+  ): Promise<void> {
+    return await this.discountService.applyDiscountToMenuItems(
+      +discountId,
+      +restaurantId,
+      applicableToAll,
+    );
+  }
+  @Delete(':discountId')
+  async deleteDiscount(@Param() discountId: string): Promise<void> {
+    return await this.discountService.deleteDiscount(+discountId);
+  }
+  @Post('/applyToOrder/:orderId')
+  async applyDiscountsToOrder(
+    @Param('orderId') orderId: string,
+  ): Promise<void> {
+    return await this.discountService.applyDiscountsToOrder(+orderId);
   }
 }

@@ -5,11 +5,9 @@ import {
   IsBoolean,
   IsDateString,
   IsOptional,
-  ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { DiscountType, DiscountApplicableTo } from '@prisma/client';
-import { DiscountApplicableToDto } from './discountApplicableToDto';
+
+import { DiscountType } from '@prisma/client';
 
 export class UpdateDiscountDto {
   @IsOptional()
@@ -38,9 +36,4 @@ export class UpdateDiscountDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
-
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => Object)
-  applicableTo?: DiscountApplicableTo[];
 }

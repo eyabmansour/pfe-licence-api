@@ -79,7 +79,6 @@ model MenuItem {
   imageUrl      String?
   order         Order[]
   discountsApp  DiscountApplicableTo[]
-  discounts     Discount[]
 }
 
 enum RestaurantStatus {
@@ -124,30 +123,28 @@ model Discount {
   startDate    DateTime?
   endDate      DateTime?
   isActive     Boolean
-  menuItem     MenuItem[]
   discountsApp DiscountApplicableTo[]
 }
 
 model DiscountApplicableTo {
-  id           Int          @id @default(autoincrement())
-  discount     Discount     @relation(fields: [discountId], references: [id])
-  discountId   Int
-  menuItemId   Int? // Identifiant de l'élément de menu auquel la remise s'applique
-  menuItem     MenuItem?    @relation(fields: [menuItemId], references: [id])
-  minQuantity  Int? // Quantité minimale de produits pour que la remise s'applique
-  minAmount    Float? // Montant minimum d'achat pour que la remise s'applique
-  startDate    DateTime? // Date de début de validité de la remise pour cet élément de menu
-  endDate      DateTime? // Date de fin de validité de la remise pour cet élément de menu
+  id         Int      @id @default(autoincrement())
+  discount   Discount @relation(fields: [discountId], references: [id])
+  discountId Int
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  menuItemId Int
+
+  minQuantity  Int?
+  minAmount    Float?
   customerType CustomerType
 }
 
 enum DiscountType {
-  PERCENTAGE // Remise en pourcentage
-  FIXED_AMOUNT // Montant fixe de remise
+  PERCENTAGE
+  FIXED_AMOUNT
 }
 
 enum CustomerType {
-  NEW_CUSTOMER // Nouveau client
-  RETURNING_CUSTOMER // Client fidèle
-  ALL_CUSTOMERS // Tous les clients
+  NEW_CUSTOMER
+  RETURNING_CUSTOMER
+  ALL_CUSTOMERS
 }

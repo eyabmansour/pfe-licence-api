@@ -74,7 +74,6 @@ export class ClientService {
     userId: number,
     orderDetails: CreateOrderDto,
   ): Promise<Order> {
-    // Vérifier si l'utilisateur existe
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -82,7 +81,6 @@ export class ClientService {
       throw new NotFoundException('User not found');
     }
 
-    // Vérifier si les articles commandés existent dans le menu
     const menuItems = await this.prisma.menuItem.findMany({
       where: { id: { in: orderDetails.itemIds } },
     });
@@ -90,10 +88,8 @@ export class ClientService {
       throw new BadRequestException('One or more items not found in the menu');
     }
 
-    // Calculer le total à payer
-    const totalPrice = menuItems.reduce((total, item) => total + item.price, 0);
+    const totalPrice = await this.calculateTotalPrice(menuItems);
 
-    // Créer la commande
     const order = await this.prisma.order.create({
       data: {
         user: { connect: { id: userId } },
@@ -122,5 +118,8 @@ export class ClientService {
       where: { id: orderId },
       data: { paymentStatus: status },
     });
+  }
+  async calculateTotalPrice(menuItems: any[]): Promise<number> {
+    return menuItems.reduce((total, item) => total + item.price, 0);
   }
 }
