@@ -36,5 +36,5 @@ export class CreateOrderDto {
 
   @IsOptional()
   @IsDate()
-  estimatedDeliveryDate?: Date | null;
+  estimatedDeliveryDate?: Date;
 }

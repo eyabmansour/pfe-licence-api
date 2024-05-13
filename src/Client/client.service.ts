@@ -4,7 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { Menu, Order, Restaurant, RestaurantStatus } from '@prisma/client';
+import {
+  Menu,
+  MenuItem,
+  Order,
+  Restaurant,
+  RestaurantStatus,
+} from '@prisma/client';
 import { RestaurantQueryDto } from './dto/client.dto';
 import { CreateOrderDto } from './dto/client-order.dto';
 
@@ -75,7 +81,9 @@ export class ClientService {
     orderDetails: CreateOrderDto,
   ): Promise<Order> {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: {
+        id: userId,
+      },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -121,5 +129,53 @@ export class ClientService {
   }
   async calculateTotalPrice(menuItems: any[]): Promise<number> {
     return menuItems.reduce((total, item) => total + item.price, 0);
+  }
+  async getOrderDetails(orderId: number): Promise<Order> {
+    return await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+  }
+  async addItemsToOrder(orderId: number, itemIds: number[]): Promise<void> {
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        items: {
+          connect: itemIds.map((itemId) => ({ id: itemId })),
+        },
+      },
+    });
+  }
+
+  async removeItemsFromOrder(
+    orderId: number,
+    itemIds: number[],
+  ): Promise<void> {
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        items: {
+          disconnect: itemIds.map((itemId) => ({ id: itemId })),
+        },
+      },
+    });
+  }
+
+  async updateItemInOrder(
+    orderId: number,
+    itemId: number,
+    updatedItem: Partial<MenuItem>,
+  ): Promise<void> {
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        items: {
+          update: {
+            where: { id: itemId },
+            data: updatedItem,
+          },
+        },
+      },
+    });
   }
 }
