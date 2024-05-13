@@ -136,7 +136,15 @@ export class ClientService {
       include: { items: true },
     });
   }
-  async addItemsToOrder(orderId: number, itemIds: number[]): Promise<void> {
+  async addItemsToOrder(orderId: number, itemIds: number[]): Promise<Order> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
     await this.prisma.order.update({
       where: { id: orderId },
       data: {
@@ -145,12 +153,29 @@ export class ClientService {
         },
       },
     });
+    const totalPrice = await this.calculateTotalPrice(order.items);
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { totalPrice },
+      include: { items: true },
+    });
+
+    return updatedOrder;
   }
 
   async removeItemsFromOrder(
     orderId: number,
     itemIds: number[],
-  ): Promise<void> {
+  ): Promise<Order> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
     await this.prisma.order.update({
       where: { id: orderId },
       data: {
@@ -159,23 +184,24 @@ export class ClientService {
         },
       },
     });
-  }
 
-  async updateItemInOrder(
-    orderId: number,
-    itemId: number,
-    updatedItem: Partial<MenuItem>,
-  ): Promise<void> {
+    const updatedOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    const totalPrice = await this.calculateTotalPrice(updatedOrder.items);
+
     await this.prisma.order.update({
       where: { id: orderId },
-      data: {
-        items: {
-          update: {
-            where: { id: itemId },
-            data: updatedItem,
-          },
-        },
-      },
+      data: { totalPrice },
     });
+
+    const finalUpdatedOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    return finalUpdatedOrder;
   }
 }

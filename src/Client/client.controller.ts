@@ -3,7 +3,7 @@ import {
   Controller,
   Get,
   Param,
-  Patch,
+  Put,
   Post,
   Query,
   UseGuards,
@@ -40,32 +40,23 @@ export class ClientController {
   ): Promise<Order> {
     return await this.clientService.createOrder(+userId, orderDetails);
   }
-  @Get('orders/:orderId')
+  @Get('order/:orderId')
   async getOrderDetails(@Param('orderId') orderId: string): Promise<Order> {
     return await this.clientService.getOrderDetails(+orderId);
   }
-  @Post('orders/:orderId/items/add')
+  @Post('order/:orderId/add')
   async addItemsToOrder(
     @Param('orderId') orderId: string,
     @Body() itemIds: number[],
-  ): Promise<void> {
-    await this.clientService.addItemsToOrder(+orderId, itemIds);
+  ) {
+    return this.clientService.addItemsToOrder(+orderId, itemIds);
   }
 
-  @Post('orders/:orderId/items/remove')
+  @Put('order/:orderId/remove')
   async removeItemsFromOrder(
     @Param('orderId') orderId: string,
     @Body() itemIds: number[],
-  ): Promise<void> {
-    await this.clientService.removeItemsFromOrder(+orderId, itemIds);
-  }
-
-  @Patch('orders/:orderId/items/:itemId')
-  async updateItemInOrder(
-    @Param('orderId') orderId: string,
-    @Param('itemId') itemId: string,
-    @Body() updatedItem: Partial<MenuItem>,
-  ): Promise<void> {
-    await this.clientService.updateItemInOrder(+orderId, +itemId, updatedItem);
+  ) {
+    return this.clientService.removeItemsFromOrder(+orderId, itemIds);
   }
 }
