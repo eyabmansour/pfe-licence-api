@@ -13,10 +13,14 @@ import {
 } from '@prisma/client';
 import { RestaurantQueryDto } from './dto/client.dto';
 import { CreateOrderDto } from './dto/client-order.dto';
+import { EventService } from './code/service/event.service';
 
 @Injectable()
 export class ClientService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventService: EventService,
+  ) {}
   async search(queryDto: RestaurantQueryDto): Promise<any> {
     const {
       search,
@@ -115,7 +119,6 @@ export class ClientService {
         estimatedDeliveryDate: orderDetails.estimatedDeliveryDate,
       },
     });
-
     return order;
   }
 
@@ -183,15 +186,23 @@ export class ClientService {
         },
       },
     });
-    const totalPrice = await this.calculateTotalPrice(order.items);
+    const updatedOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    const totalPrice = await this.calculateTotalPrice(updatedOrder.items);
 
-    const updatedOrder = await this.prisma.order.update({
+    await this.prisma.order.update({
       where: { id: orderId },
       data: { totalPrice },
+    });
+
+    const finalUpdatedOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
       include: { items: true },
     });
 
-    return updatedOrder;
+    return finalUpdatedOrder;
   }
 
   async removeItemsFromOrder(

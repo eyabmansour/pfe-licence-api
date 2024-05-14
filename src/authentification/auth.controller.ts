@@ -34,10 +34,7 @@ export class AuthController {
     @Body() registerDto: RegisterUsersDto,
   ): Promise<any> {
     const result = await this.authService.register(registerDto);
-    await this.mailService.sendWelcomeEmail(
-      registerDto.email,
-      registerDto.username,
-    );
+
     return response.status(200).json({
       status: 'OK!',
       message: 'Successfully register users!',

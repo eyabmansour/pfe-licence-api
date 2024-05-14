@@ -55,6 +55,7 @@ model Restaurant {
   requests     RestaurantRequest[]
   ownerId      Int
   owner        User                @relation(fields: [ownerId], references: [id])
+  discount     Discount[]
 }
 
 model Menu {
@@ -123,6 +124,8 @@ model Discount {
   startDate    DateTime?
   endDate      DateTime?
   isActive     Boolean
+  restaurantId Int
+  restaurant   Restaurant             @relation(fields: [restaurantId], references: [id])
   discountsApp DiscountApplicableTo[]
 }
 

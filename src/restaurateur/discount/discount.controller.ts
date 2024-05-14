@@ -19,11 +19,15 @@ import { UpdateDiscountDto } from './dto/UpdateDiscountDto';
 export class DiscountController {
   constructor(private readonly discountService: DiscountService) {}
 
-  @Post()
+  @Post('/:restaurantId')
   async createDiscount(
+    @Param('restaurantId') restaurantId: string,
     @Body() createDiscountDto: CreateDiscountDto,
   ): Promise<Discount> {
-    return await this.discountService.createDiscount(createDiscountDto);
+    return await this.discountService.createDiscount(
+      createDiscountDto,
+      +restaurantId,
+    );
   }
   @Put(':id')
   async updateDiscount(
@@ -69,11 +73,5 @@ export class DiscountController {
   @Delete(':discountId')
   async deleteDiscount(@Param() discountId: string): Promise<void> {
     return await this.discountService.deleteDiscount(+discountId);
-  }
-  @Post('/applyToOrder/:orderId')
-  async applyDiscountsToOrder(
-    @Param('orderId') orderId: string,
-  ): Promise<void> {
-    return await this.discountService.applyDiscountsToOrder(+orderId);
   }
 }

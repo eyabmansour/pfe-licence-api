@@ -8,6 +8,7 @@ import {
   Discount,
   DiscountType,
   DiscountApplicableTo,
+  Restaurant,
   CustomerType,
 } from '@prisma/client';
 import { Prisma } from '@prisma/client';
@@ -15,19 +16,23 @@ import { CreateDiscountDto } from './dto/CreateDiscountDto ';
 import { UpdateDiscountDto } from './dto/UpdateDiscountDto';
 import { DiscountApplicableToDto } from './dto/discountApplicableDto';
 import { ClientService } from 'src/Client/client.service';
+import { EventService } from 'src/Client/code/service/event.service';
 
 @Injectable()
 export class DiscountService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clientService: ClientService,
+    private readonly eventService: EventService,
   ) {}
   async createDiscount(
-    CreateDiscountDto: CreateDiscountDto,
+    createDiscountDto: CreateDiscountDto,
+    restaurantId: number,
   ): Promise<Discount> {
     const createDiscount = await this.prisma.discount.create({
       data: {
-        ...CreateDiscountDto,
+        ...createDiscountDto,
+        restaurant: { connect: { id: restaurantId } },
       },
     });
     return createDiscount;
@@ -109,7 +114,6 @@ export class DiscountService {
     restaurantId: number,
     discountApplicableToDto: DiscountApplicableToDto,
   ): Promise<void> {
-    // Récupérer tous les éléments de menu du restaurant
     const menuItems = await this.prisma.menuItem.findMany({
       where: {
         restaurant_id: restaurantId,
@@ -146,55 +150,5 @@ export class DiscountService {
     await this.prisma.discount.delete({
       where: { id: discountId },
     });
-  }
-
-  async applyDiscountsToOrder(orderId: number): Promise<void> {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    });
-
-    if (!order) {
-      throw new NotFoundException(`Order with id ${orderId} not found`);
-    }
-
-    const totalPrice = this.clientService.calculateTotalPrice(order.items);
-    const discountedTotalPrice = await this.applyDiscounts(
-      await totalPrice,
-      order.userId,
-    );
-
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: { totalPrice: discountedTotalPrice },
-    });
-  }
-  private async applyDiscounts(
-    totalPrice: number,
-    userId: number,
-  ): Promise<number> {
-    const activeDiscounts = await this.prisma.discount.findMany({
-      where: {
-        isActive: true,
-        AND: [
-          { startDate: { lte: new Date() } },
-          { endDate: { gte: new Date() } },
-        ],
-      },
-    });
-
-    for (const discount of activeDiscounts) {
-      let discountValue = discount.value;
-
-      if (discount.type === DiscountType.FIXED_AMOUNT) {
-        totalPrice -= discountValue;
-      }
-
-      if (discount.type === DiscountType.PERCENTAGE) {
-        discountValue = totalPrice * (discount.value / 100);
-        totalPrice -= discountValue;
-      }
-    }
-    return totalPrice;
   }
 }
