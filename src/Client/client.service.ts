@@ -115,17 +115,20 @@ export class ClientService {
         estimatedDeliveryDate: orderDetails.estimatedDeliveryDate,
       },
     });
-    if (orderDetails.paymentMethod) {
-      await this.updatePaymentStatus(order.id, 'Paid');
-    }
 
     return order;
   }
-  async updatePaymentStatus(orderId: number, status: string): Promise<void> {
-    await this.prisma.order.update({
+
+  async updatePaymentStatus(status: string, orderId: number): Promise<Order> {
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: { paymentStatus: status },
+      include: { items: true },
     });
+    if (!updatedOrder) {
+      throw new NotFoundException('Order not found');
+    }
+    return updatedOrder;
   }
   async calculateTotalPrice(menuItems: any[]): Promise<number> {
     return menuItems.reduce((total, item) => total + item.price, 0);
@@ -136,6 +139,33 @@ export class ClientService {
       include: { items: true },
     });
   }
+  async updateOrder(
+    orderId: number,
+    updatedOrderDetails: Partial<CreateOrderDto>,
+  ): Promise<Order> {
+    const existingOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!existingOrder) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const totalPrice = await this.calculateTotalPrice(existingOrder.items);
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        ...updatedOrderDetails,
+        totalPrice,
+      },
+      include: { items: true },
+    });
+
+    return updatedOrder;
+  }
+
   async addItemsToOrder(orderId: number, itemIds: number[]): Promise<Order> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },

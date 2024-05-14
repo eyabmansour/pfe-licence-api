@@ -44,6 +44,20 @@ export class ClientController {
   async getOrderDetails(@Param('orderId') orderId: string): Promise<Order> {
     return await this.clientService.getOrderDetails(+orderId);
   }
+  @Post('/status/:orderId')
+  async updatePaymentStatus(
+    @Param() orderId: string,
+    @Body() status: string,
+  ): Promise<Order> {
+    return await this.clientService.updatePaymentStatus(status, +orderId);
+  }
+  @Put('/order/:id')
+  async updateOrder(
+    @Param('id') orderId: string,
+    @Body() updatedOrderDetails: Partial<CreateOrderDto>,
+  ): Promise<Order> {
+    return this.clientService.updateOrder(+orderId, updatedOrderDetails);
+  }
   @Post('order/:orderId/add')
   async addItemsToOrder(
     @Param('orderId') orderId: string,

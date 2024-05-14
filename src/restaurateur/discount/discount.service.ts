@@ -123,8 +123,6 @@ export class DiscountService {
     if (!discount) {
       throw new NotFoundException(`Discount with id ${discountId} not found`);
     }
-
-    // Créer une entrée dans DiscountApplicableTo pour chaque élément de menu
     await Promise.all(
       menuItems.map(async (menuItem) => {
         await this.prisma.discountApplicableTo.create({
@@ -151,7 +149,6 @@ export class DiscountService {
   }
 
   async applyDiscountsToOrder(orderId: number): Promise<void> {
-    // Récupérer la commande
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: { items: true },
@@ -161,16 +158,12 @@ export class DiscountService {
       throw new NotFoundException(`Order with id ${orderId} not found`);
     }
 
-    // Calculer le montant total initial de la commande en utilisant la méthode du service UtilService
     const totalPrice = this.clientService.calculateTotalPrice(order.items);
-
-    // Appliquer les réductions
     const discountedTotalPrice = await this.applyDiscounts(
       await totalPrice,
       order.userId,
     );
 
-    // Mettre à jour le montant total de la commande
     await this.prisma.order.update({
       where: { id: orderId },
       data: { totalPrice: discountedTotalPrice },
@@ -180,27 +173,23 @@ export class DiscountService {
     totalPrice: number,
     userId: number,
   ): Promise<number> {
-    // Récupérer les réductions actives
     const activeDiscounts = await this.prisma.discount.findMany({
       where: {
         isActive: true,
         AND: [
-          { startDate: { lte: new Date() } }, // Vérifier si la date de début est antérieure ou égale à aujourd'hui
-          { endDate: { gte: new Date() } }, // Vérifier si la date de fin est postérieure ou égale à aujourd'hui
+          { startDate: { lte: new Date() } },
+          { endDate: { gte: new Date() } },
         ],
       },
     });
 
-    // Appliquer les réductions
     for (const discount of activeDiscounts) {
       let discountValue = discount.value;
 
-      // Si le type de réduction est FIXED_AMOUNT, appliquer directement la valeur de la réduction
       if (discount.type === DiscountType.FIXED_AMOUNT) {
         totalPrice -= discountValue;
       }
 
-      // Si le type de réduction est PERCENTAGE, ajuster la valeur de la réduction en pourcentage du montant total
       if (discount.type === DiscountType.PERCENTAGE) {
         discountValue = totalPrice * (discount.value / 100);
         totalPrice -= discountValue;
