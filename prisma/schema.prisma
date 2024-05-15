@@ -130,12 +130,11 @@ model Discount {
 }
 
 model DiscountApplicableTo {
-  id         Int      @id @default(autoincrement())
-  discount   Discount @relation(fields: [discountId], references: [id])
-  discountId Int
-  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
-  menuItemId Int
-
+  id           Int          @id @default(autoincrement())
+  discount     Discount     @relation(fields: [discountId], references: [id])
+  discountId   Int
+  menuItem     MenuItem     @relation(fields: [menuItemId], references: [id])
+  menuItemId   Int
   minQuantity  Int?
   minAmount    Float?
   customerType CustomerType

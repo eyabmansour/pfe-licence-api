@@ -12,6 +12,7 @@ import {
   Restaurant,
   RestaurantRequest,
   RestaurantStatus,
+  RoleCodeEnum,
 } from '@prisma/client';
 import { validate } from 'class-validator';
 import { MenuDto } from './dto/MenuDto';
@@ -39,6 +40,16 @@ export class RestaurateurService {
         owner: { connect: { id: ownerId } },
       },
     });
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: ownerId },
+      include: { role: true },
+    });
+    if (user.role.code !== RoleCodeEnum.ADMINISTRATOR)
+      await this.prisma.user.update({
+        where: { id: ownerId },
+        data: { role: { connect: { code: RoleCodeEnum.RESTAURATEUR } } },
+      });
     return createRestaurant;
   }
   async getEntities(
