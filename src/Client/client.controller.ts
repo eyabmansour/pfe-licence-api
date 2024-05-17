@@ -7,9 +7,10 @@ import {
   Post,
   Query,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import { ClientService } from './client.service';
-import { Menu, MenuItem, Order, Restaurant } from '@prisma/client';
+import { Menu, MenuItem, Order, OrderStatus, Restaurant } from '@prisma/client';
 import { RestaurantQueryDto } from './dto/client.dto';
 import { AuthGuard } from 'src/authentification/auth.guard';
 import { CreateOrderDto } from './dto/client-order.dto';
@@ -72,5 +73,12 @@ export class ClientController {
     @Body() itemIds: number[],
   ) {
     return this.clientService.removeItemsFromOrder(+orderId, itemIds);
+  }
+  @Patch('order/:id/status/:status')
+  async updateOrderStatus(
+    @Param('id') orderId: string,
+    @Param('status') status: OrderStatus,
+  ): Promise<Order> {
+    return this.clientService.updateOrderStatus(+orderId, status);
   }
 }

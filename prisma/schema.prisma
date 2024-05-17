@@ -98,9 +98,9 @@ model RestaurantRequest {
 }
 
 model Order {
-  id                    Int        @id @default(autoincrement())
+  id                    Int         @id @default(autoincrement())
   userId                Int
-  user                  User       @relation(fields: [userId], references: [id])
+  user                  User        @relation(fields: [userId], references: [id])
   items                 MenuItem[]
   totalPrice            Float
   deliveryAddress       String?
@@ -111,8 +111,15 @@ model Order {
   paymentStatus         String
   paymentMethod         String?
   estimatedDeliveryDate DateTime?
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
+  status                OrderStatus @default(PENDING)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  IN_CHARGE
+  COMPLETED
 }
 
 model Discount {

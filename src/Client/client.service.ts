@@ -8,6 +8,7 @@ import {
   Menu,
   MenuItem,
   Order,
+  OrderStatus,
   Restaurant,
   RestaurantStatus,
 } from '@prisma/client';
@@ -154,7 +155,11 @@ export class ClientService {
     if (!existingOrder) {
       throw new NotFoundException('Order not found');
     }
-
+    if (existingOrder.status !== OrderStatus.PENDING) {
+      throw new BadRequestException(
+        `Cannot modify an order that is currently ${existingOrder.status.toLowerCase()}`,
+      );
+    }
     const totalPrice = await this.calculateTotalPrice(existingOrder.items);
 
     const updatedOrder = await this.prisma.order.update({
@@ -177,7 +182,11 @@ export class ClientService {
     if (!order) {
       throw new NotFoundException('Order not found');
     }
-
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException(
+        `Cannot modify an order that is currently ${order.status.toLowerCase()}`,
+      );
+    }
     await this.prisma.order.update({
       where: { id: orderId },
       data: {
@@ -216,7 +225,11 @@ export class ClientService {
     if (!order) {
       throw new NotFoundException('Order not found');
     }
-
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException(
+        `Cannot modify an order that is currently ${order.status.toLowerCase()}`,
+      );
+    }
     await this.prisma.order.update({
       where: { id: orderId },
       data: {
@@ -244,5 +257,23 @@ export class ClientService {
     });
 
     return finalUpdatedOrder;
+  }
+  async updateOrderStatus(
+    orderId: number,
+    newStatus: OrderStatus,
+  ): Promise<Order> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order Not Found');
+    }
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: newStatus },
+      include: { items: true },
+    });
+    return updatedOrder;
   }
 }

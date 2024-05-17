@@ -87,11 +87,17 @@ export class RestaurateurService {
     if (!user) {
       throw new NotFoundException('User Not Found!');
     }
+    const app = { status: RestaurantStatus.APPROVED };
     if (user.role.code === RoleCodeEnum.ADMINISTRATOR) {
-      return this.prisma.restaurant.findMany();
+      return this.prisma.restaurant.findMany({
+        where: app,
+      });
     } else if (user.role.code === RoleCodeEnum.RESTAURATEUR) {
       return this.prisma.restaurant.findMany({
-        where: { ownerId: userId },
+        where: {
+          ...app,
+          ownerId: userId,
+        },
       });
     } else {
       throw new BadRequestException(
