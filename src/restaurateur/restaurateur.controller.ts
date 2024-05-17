@@ -47,7 +47,11 @@ export class RestaurateurController {
   ): Promise<any[]> {
     return this.restaurateurService.getEntities(entityType);
   }
-  @Get('users/:userId/restaurants')
+  @Get()
+  async getUserRestaurants(@ReqUser() user: User): Promise<Restaurant[]> {
+    return this.restaurateurService.getUserRestaurants(user.id);
+  }
+  /* @Get('users/:userId/restaurants')
   @MinRole(UserRole.ADMINISTRATOR)
   async getUserRestaurants(@Param('userId') userId: string): Promise<any> {
     const userRestaurants =
@@ -56,7 +60,7 @@ export class RestaurateurController {
       data: userRestaurants,
       message: 'User restaurants fetched successfully',
     };
-  }
+  }*/
 
   @Post('/request')
   async submitRequest(

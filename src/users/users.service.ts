@@ -14,6 +14,20 @@ export class UsersService {
   async getAllUser(): Promise<User[]> {
     return this.prisma.user.findMany();
   }
+  async getUserProfil(userId: number): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: true,
+        restaurants: true,
+        orders: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User Not Found !');
+    }
+    return user;
+  }
   async createUser(data: RegisterUsersDto): Promise<User> {
     const existing = await this.prisma.user.findFirst({
       where: {

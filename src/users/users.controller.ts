@@ -16,14 +16,16 @@ import { UsersService } from './users.service';
 import { Request, Response } from 'express';
 import { AuthGuard } from 'src/authentification/auth.guard';
 import { UserRole } from 'src/roles/user-role.model';
-import { User } from './users.model';
+import { User } from '@prisma/client';
 import { MinRole } from 'src/roles/min-role.decorator';
+import { ReqUser } from 'src/authentification/decorators/req-user.decorator';
 
 @Controller('users')
+@UseGuards(AuthGuard)
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
-  @Get()
+  @Get('/allUsers')
   async getAllUsers(
     @Req() request: Request,
     @Res() response: Response,
@@ -34,6 +36,10 @@ export class UsersController {
       message: 'Successfully fetch data!',
       result: result,
     });
+  }
+  @Get('profile')
+  async getUserProfile(@ReqUser() user: User) {
+    return this.userService.getUserProfil(user.id);
   }
   @Post()
   @MinRole(UserRole.ADMINISTRATOR)

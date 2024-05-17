@@ -79,7 +79,27 @@ export class RestaurateurService {
 
     return entities;
   }
-
+  async getUserRestaurants(userId: number): Promise<Restaurant[]> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+    if (!user) {
+      throw new NotFoundException('User Not Found!');
+    }
+    if (user.role.code === RoleCodeEnum.ADMINISTRATOR) {
+      return this.prisma.restaurant.findMany();
+    } else if (user.role.code === RoleCodeEnum.RESTAURATEUR) {
+      return this.prisma.restaurant.findMany({
+        where: { ownerId: userId },
+      });
+    } else {
+      throw new BadRequestException(
+        'User does not have permission to access restaurants ',
+      );
+    }
+  }
+  /*
   async getRestaurantsByUserId(userId: number): Promise<any> {
     const userRestaurants = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -87,7 +107,7 @@ export class RestaurateurService {
     });
     return userRestaurants?.restaurants;
   }
-
+*/
   async submitRestaurantRequest(
     restaurantId: number,
   ): Promise<RestaurantRequest> {
