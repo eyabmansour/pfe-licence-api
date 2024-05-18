@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import {
+  DiscountType,
   Menu,
   MenuItem,
   Order,
@@ -135,7 +136,31 @@ export class ClientService {
     return updatedOrder;
   }
   async calculateTotalPrice(menuItems: any[]): Promise<number> {
-    return menuItems.reduce((total, item) => total + item.price, 0);
+    let totalPrice = 0;
+
+    for (const item of menuItems) {
+      let itemPrice = item.price;
+
+      const applicableDiscounts =
+        await this.prisma.discountApplicableTo.findMany({
+          where: { menuItemId: item.id },
+          include: { discount: true },
+        });
+
+      for (const applicableDiscount of applicableDiscounts) {
+        if (applicableDiscount.discount.isActive) {
+          if (applicableDiscount.discount.type === DiscountType.PERCENTAGE) {
+            itemPrice -= itemPrice * (applicableDiscount.discount.value / 100);
+          } else if (
+            applicableDiscount.discount.type === DiscountType.FIXED_AMOUNT
+          ) {
+            itemPrice -= applicableDiscount.discount.value;
+          }
+        }
+      }
+      totalPrice += itemPrice;
+    }
+    return totalPrice;
   }
   async getOrderDetails(orderId: number): Promise<Order> {
     return await this.prisma.order.findUnique({

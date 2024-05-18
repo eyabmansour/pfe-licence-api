@@ -23,7 +23,6 @@ export class DiscountService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clientService: ClientService,
-    private readonly eventService: EventService,
   ) {}
   async createDiscount(
     createDiscountDto: CreateDiscountDto,
