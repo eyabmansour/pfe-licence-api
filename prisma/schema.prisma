@@ -14,15 +14,17 @@ datasource db {
 }
 
 model User {
-  id           Int          @id @default(autoincrement())
-  email        String       @unique
-  username     String       @unique
-  password     String
-  role         Role?        @relation(fields: [role_id], references: [id])
-  role_id      Int?
-  restaurants  Restaurant[]
-  orders       Order[]
-  referralCode String?
+  id             Int                    @id @default(autoincrement())
+  email          String                 @unique
+  username       String                 @unique
+  password       String
+  role           Role?                  @relation(fields: [role_id], references: [id])
+  role_id        Int?
+  restaurants    Restaurant[]
+  orders         Order[]
+  referralCode   String?
+  referralUsages ReferralUsage[]
+  discounts      DiscountApplicableTo[]
 }
 
 model Role {
@@ -51,7 +53,7 @@ model Restaurant {
   imageUrl     String?
   menuItems    MenuItem[]
   menu         Menu[]
-  status       RestaurantStatus
+  status       RestaurantStatus    @default(DRAFT)
   requests     RestaurantRequest[]
   ownerId      Int
   owner        User                @relation(fields: [ownerId], references: [id])
@@ -78,7 +80,7 @@ model MenuItem {
   menu_id       Int?
   menu          Menu?                  @relation(fields: [menu_id], references: [id])
   imageUrl      String?
-  order         Order[]
+  order         OrderItem[]
   discountsApp  DiscountApplicableTo[]
 }
 
@@ -94,14 +96,14 @@ model RestaurantRequest {
   id            Int              @id @default(autoincrement())
   restaurant    Restaurant       @relation(fields: [restaurant_id], references: [id])
   restaurant_id Int
-  status        RestaurantStatus @default(DRAFT)
+  status        RestaurantStatus
 }
 
 model Order {
   id                    Int         @id @default(autoincrement())
   userId                Int
   user                  User        @relation(fields: [userId], references: [id])
-  items                 MenuItem[]
+  items                 OrderItem[]
   totalPrice            Float
   deliveryAddress       String?
   deliveryInstructions  String?
@@ -116,44 +118,59 @@ model Order {
   updatedAt             DateTime    @updatedAt
 }
 
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  order      Order    @relation(fields: [orderId], references: [id])
+  menuItemId Int
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int      @default(1)
+}
+
 enum OrderStatus {
   PENDING
   IN_CHARGE
-  COMPLETED
+  IN_THE_PROCESS_OF_DELIVERY
 }
 
 model Discount {
-  id           Int                    @id @default(autoincrement())
-  name         String                 @unique
-  description  String?
-  type         DiscountType
-  value        Float
-  startDate    DateTime?
-  endDate      DateTime?
-  isActive     Boolean
-  restaurantId Int
-  restaurant   Restaurant             @relation(fields: [restaurantId], references: [id])
-  discountsApp DiscountApplicableTo[]
+  id             Int                    @id @default(autoincrement())
+  name           String                 @unique
+  description    String?
+  type           DiscountType
+  value          Float
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean
+  restaurantId   Int
+  restaurant     Restaurant             @relation(fields: [restaurantId], references: [id])
+  discountsApp   DiscountApplicableTo[]
+  referralUsages ReferralUsage[]
 }
 
 model DiscountApplicableTo {
-  id           Int          @id @default(autoincrement())
-  discount     Discount     @relation(fields: [discountId], references: [id])
-  discountId   Int
-  menuItem     MenuItem     @relation(fields: [menuItemId], references: [id])
-  menuItemId   Int
-  minQuantity  Int?
-  minAmount    Float?
-  customerType CustomerType
+  id            Int       @id @default(autoincrement())
+  discount      Discount  @relation(fields: [discountId], references: [id])
+  discountId    Int
+  menuItem      MenuItem? @relation(fields: [menuItemId], references: [id])
+  menuItemId    Int
+  minQuantity   Int?
+  minAmount     Float?
+  minOrderCount Int?
+  userId        Int
+  user          User?     @relation(fields: [userId], references: [id])
+}
+
+model ReferralUsage {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  discount   Discount @relation(fields: [discountId], references: [id])
+  discountId Int
+  usedAt     DateTime @default(now())
 }
 
 enum DiscountType {
   PERCENTAGE
   FIXED_AMOUNT
-}
-
-enum CustomerType {
-  NEW_CUSTOMER
-  RETURNING_CUSTOMER
-  ALL_CUSTOMERS
 }

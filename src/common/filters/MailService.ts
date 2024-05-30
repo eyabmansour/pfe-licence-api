@@ -10,7 +10,7 @@ export class MailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT),
+      port: parseInt(process.env.SMTP_PORT, 10),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USERNAME,
@@ -42,17 +42,6 @@ export class MailService {
     await this.transporter.sendMail(mailOptions);
   }
 
-  async sendPasswordResetEmail(user: User, resetLink: string): Promise<void> {
-    const mailOptions: nodemailer.SendMailOptions = {
-      from: process.env.SMTP_USERNAME,
-      to: user.email,
-      subject: 'Réinitialisation de mot de passe',
-      text: `Bonjour ${user.username}, vous avez demandé la réinitialisation de votre mot de passe. Veuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe : ${resetLink}`,
-    };
-
-    await this.transporter.sendMail(mailOptions);
-  }
-
   async sendCustomEmail(
     to: string,
     subject: string,
@@ -73,6 +62,21 @@ export class MailService {
       to: email,
       subject: 'Bienvenue sur notre plateforme',
       text: `Bienvenue sur notre plateforme, ${username} ! Nous sommes ravis de vous accueillir.`,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
+  async sendPasswordResetEmail(email: string, token: string) {
+    const url = `http://your-app-url/reset-password?token=${token}`;
+
+    const mailOptions: nodemailer.SendMailOptions = {
+      from: process.env.SMTP_USERNAME,
+      to: email,
+      subject: 'Password Reset',
+      html: `<p>Hello </p>
+             <p>You requested a password reset. Click the link below to reset your password:</p>
+             <a href="${url}">Reset Password</a>
+             <p>If you did not request this, please ignore this email.</p>`,
     };
 
     await this.transporter.sendMail(mailOptions);

@@ -36,7 +36,7 @@ export class RestaurateurService {
     const createRestaurant = await this.prisma.restaurant.create({
       data: {
         ...restaurantDto,
-        status: RestaurantStatus.DRAFT,
+        status: RestaurantStatus.PENDING,
         owner: { connect: { id: ownerId } },
       },
     });
@@ -168,6 +168,7 @@ export class RestaurateurService {
   ): Promise<Restaurant> {
     const restaurant = await this.prisma.restaurant.findFirst({
       where: {
+        status: RestaurantStatus.APPROVED,
         id: restaurantId,
         ownerId: ownerId,
       },
@@ -198,6 +199,34 @@ export class RestaurateurService {
     });
     return menu;
   }
+  async deleteMenu(restaurantId: number, menuId: number): Promise<void> {
+    const menu = await this.prisma.menu.findUnique({
+      where: { id: menuId },
+      include: { restaurant: true, menuItems: true }, // Inclure les éléments de menu associés
+    });
+
+    if (!menu) {
+      throw new NotFoundException('Menu not found');
+    }
+
+    if (menu.restaurant.id !== restaurantId) {
+      throw new BadRequestException(
+        'Menu does not belong to the specified restaurant',
+      );
+    }
+
+    // Supprimer tous les éléments de menu associés au menu
+    for (const menuItem of menu.menuItems) {
+      await this.prisma.menuItem.delete({
+        where: { id: menuItem.id },
+      });
+    }
+
+    // Enfin, supprimer le menu lui-même
+    await this.prisma.menu.delete({
+      where: { id: menuId },
+    });
+  }
   async addMenuItemToMenu(
     MenuId: number,
     menuItemDto: MenuItemDto,
@@ -219,6 +248,23 @@ export class RestaurateurService {
       },
     });
     return menuItem;
+  }
+  async deleteMenuItem(menuId: number, menuItemId: number): Promise<void> {
+    const menuItem = await this.prisma.menuItem.findUnique({
+      where: { id: menuItemId },
+      include: { menu: true },
+    });
+    if (!menuItem) {
+      throw new NotFoundException('MenuIem not found');
+    }
+    if (menuItem.menu.id !== menuId) {
+      throw new BadRequestException(
+        'MenuItem does not belong to the specified menu',
+      );
+    }
+    await this.prisma.menuItem.delete({
+      where: { id: menuItemId },
+    });
   }
 
   async uploadImage(

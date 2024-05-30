@@ -4,11 +4,15 @@ import { ReferralService } from './parrainage.service';
 @Controller('referral')
 export class ReferralController {
   constructor(private readonly referralService: ReferralService) {}
-
-  @Post(':userId')
-  async assignReferralCode(@Param('userId') userId: string): Promise<string> {
-    const referralCode =
-      await this.referralService.assignReferralCodeToUser(+userId);
-    return referralCode;
+  @Post('assign-referral-codes')
+  async assignReferralCodes(
+    @Body() body: any, // Use 'any' type for debugging
+  ): Promise<number> {
+    console.log('Request Body:', body);
+    const minOrderCount = body.minOrderCount;
+    console.log('minOrderCount:', minOrderCount);
+    return this.referralService.assignReferralCodeToEligibleUsers(
+      minOrderCount,
+    );
   }
 }

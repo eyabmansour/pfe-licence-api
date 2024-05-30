@@ -11,6 +11,8 @@ import {
   UseGuards,
   HttpException,
   InternalServerErrorException,
+  Patch,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Request, Response } from 'express';
@@ -19,6 +21,10 @@ import { UserRole } from 'src/roles/user-role.model';
 import { User } from '@prisma/client';
 import { MinRole } from 'src/roles/min-role.decorator';
 import { ReqUser } from 'src/authentification/decorators/req-user.decorator';
+import { ChangePasswordDto } from './dto.ts/ChangePassword';
+import { SendPasswordResetLinkDto } from './dto.ts/send-password-reset-link.dto';
+import { ResetPasswordDto } from './dto.ts/reset-password.dto';
+import { RegisterUsersDto } from 'src/authentification/dto/register-user.dto';
 
 @Controller('users')
 @UseGuards(AuthGuard)
@@ -42,7 +48,6 @@ export class UsersController {
     return this.userService.getUserProfil(user.id);
   }
   @Post()
-  @MinRole(UserRole.ADMINISTRATOR)
   async createUser(
     @Body() userData: User,
     @Res() response: Response,
@@ -51,7 +56,6 @@ export class UsersController {
     return response.status(201).json(newUser);
   }
   @Put(':id')
-  @MinRole(UserRole.ADMINISTRATOR)
   async updateUser(
     @Param('id') userId: string,
     @Body() userData: User,
@@ -67,7 +71,6 @@ export class UsersController {
     return response.status(200).json(updatedUser);
   }
   @Delete(':id')
-  @MinRole(UserRole.ADMINISTRATOR)
   async deleteUser(
     @Param('id') userId: string,
     @Res() response: Response,
@@ -83,5 +86,44 @@ export class UsersController {
       status: 'OK!',
       message: 'User deleted successfully',
     });
+  }
+  @Patch('/updateProfil/:id')
+  async updateUserProfile(
+    @Param('id') userId: string,
+    @Body() updateData: Partial<RegisterUsersDto>,
+  ) {
+    const updatedUser = await this.userService.updateUserProfile(
+      +userId,
+      updateData,
+    );
+    return updatedUser;
+  }
+
+  @Delete('/deleteProfil/:id')
+  async deleteUserProfile(@Param('id') userId: string) {
+    await this.userService.deleteUserProfile(+userId);
+    return { message: 'User profile deleted successfully' };
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch('change-password')
+  async changePassword(
+    @Req() req,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    const userId = req.user.id;
+    await this.userService.changePassword(userId, changePasswordDto);
+    return { message: 'Password changed successfully' };
+  }
+  @Post('password/reset/request')
+  async requestPasswordReset(
+    @Body() requestDto: SendPasswordResetLinkDto,
+  ): Promise<void> {
+    await this.userService.requestPasswordReset(requestDto.email);
+  }
+
+  @Post('password/reset')
+  async resetPassword(@Body() resetDto: ResetPasswordDto): Promise<void> {
+    await this.userService.resetPassword(resetDto.token, resetDto.newPassword);
   }
 }

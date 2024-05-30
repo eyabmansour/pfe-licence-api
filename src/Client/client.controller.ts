@@ -14,6 +14,7 @@ import { Menu, MenuItem, Order, OrderStatus, Restaurant } from '@prisma/client';
 import { RestaurantQueryDto } from './dto/client.dto';
 import { AuthGuard } from 'src/authentification/auth.guard';
 import { CreateOrderDto } from './dto/client-order.dto';
+import { OrderItemDto } from './dto/order-item.dto';
 
 @Controller('clients')
 @UseGuards(AuthGuard)
@@ -62,7 +63,7 @@ export class ClientController {
   @Post('order/:orderId/add')
   async addItemsToOrder(
     @Param('orderId') orderId: string,
-    @Body() itemIds: number[],
+    @Body() itemIds: OrderItemDto[],
   ) {
     return this.clientService.addItemsToOrder(+orderId, itemIds);
   }
@@ -70,7 +71,7 @@ export class ClientController {
   @Put('order/:orderId/remove')
   async removeItemsFromOrder(
     @Param('orderId') orderId: string,
-    @Body() itemIds: number[],
+    @Body() itemIds: OrderItemDto[],
   ) {
     return this.clientService.removeItemsFromOrder(+orderId, itemIds);
   }
@@ -80,5 +81,9 @@ export class ClientController {
     @Param('status') status: OrderStatus,
   ): Promise<Order> {
     return this.clientService.updateOrderStatus(+orderId, status);
+  }
+  @Get('count/:userId')
+  async countUserOrders(@Param('userId') userId: string): Promise<number> {
+    return this.clientService.countUserOrders(Number(userId));
   }
 }

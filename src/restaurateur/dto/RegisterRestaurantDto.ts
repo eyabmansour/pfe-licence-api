@@ -21,7 +21,4 @@ export class RegisterRestaurantDto {
 
   @IsNotEmpty()
   cuisineType: string;
-
-  @IsEnum(RestaurantStatus)
-  status: RestaurantStatus;
 }

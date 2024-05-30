@@ -41,6 +41,7 @@ export class RestaurateurController {
   ): Promise<Restaurant> {
     return this.restaurateurService.register(restaurantData, user.id);
   }
+  @MinRole(UserRole.RESTAURATEUR)
   @Get('/:entityType')
   async getEntities(
     @Param('entityType') entityType: 'restaurant' | 'menu' | 'menuItem',
@@ -95,6 +96,22 @@ export class RestaurateurController {
     @Body() menuDto: MenuDto,
   ): Promise<Menu> {
     return this.restaurateurService.createMenu(+restaurantId, menuDto);
+  }
+  @Delete('menu/delete/:restaurantId/:menuId')
+  @MinRole(UserRole.RESTAURATEUR)
+  async deleteMenu(
+    @Param('restaurantId') restaurantId: string,
+    @Param('menuId') menuId: string,
+  ): Promise<void> {
+    return this.restaurateurService.deleteMenu(+restaurantId, +menuId);
+  }
+  @Delete('menu/item/delete/:menuId/:menuItemId')
+  @MinRole(UserRole.RESTAURATEUR)
+  async deleteMenuIem(
+    @Param('menuId') menuId: string,
+    @Param('menuItemId') menuItemId: string,
+  ): Promise<void> {
+    return this.restaurateurService.deleteMenuItem(+menuId, +menuItemId);
   }
   @Post('menus/:id/menuItems')
   async addMenuItemToMenu(
