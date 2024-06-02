@@ -13,6 +13,8 @@ import {
   InternalServerErrorException,
   Patch,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Request, Response } from 'express';
@@ -25,6 +27,8 @@ import { ChangePasswordDto } from './dto.ts/ChangePassword';
 import { SendPasswordResetLinkDto } from './dto.ts/send-password-reset-link.dto';
 import { ResetPasswordDto } from './dto.ts/reset-password.dto';
 import { RegisterUsersDto } from 'src/authentification/dto/register-user.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { multerConfig } from '../restaurateur/Multer/multer.config';
 
 @Controller('users')
 @UseGuards(AuthGuard)
@@ -125,5 +129,20 @@ export class UsersController {
   @Post('password/reset')
   async resetPassword(@Body() resetDto: ResetPasswordDto): Promise<void> {
     await this.userService.resetPassword(resetDto.token, resetDto.newPassword);
+  }
+  @Post('/images/:id')
+  @UseInterceptors(FileInterceptor('image', multerConfig))
+  async uplodeImage(
+    @Param('id') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const imageUrl = file.path;
+    await this.userService.uploadImage(+userId, imageUrl);
+    return { message: 'Image Upload successfuly ', imageUrl };
+  }
+  @Delete('/images/:id')
+  async deleteImage(@Param('id') userId: string) {
+    await this.userService.deleteImage(+userId);
+    return { message: 'Image deleted successfully' };
   }
 }

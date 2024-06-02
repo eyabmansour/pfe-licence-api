@@ -25,6 +25,7 @@ model User {
   referralCode   String?
   referralUsages ReferralUsage[]
   discounts      DiscountApplicableTo[]
+  imageUrl       String?
 }
 
 model Role {
@@ -58,6 +59,7 @@ model Restaurant {
   ownerId      Int
   owner        User                @relation(fields: [ownerId], references: [id])
   discount     Discount[]
+  categorie    Category[]
 }
 
 model Menu {
@@ -68,6 +70,8 @@ model Menu {
   restaurant_id Int
   menuItems     MenuItem[]
   imageUrl      String?
+  category      Category?  @relation(fields: [categoryId], references: [id])
+  categoryId    Int?
 }
 
 model MenuItem {
@@ -82,6 +86,15 @@ model MenuItem {
   imageUrl      String?
   order         OrderItem[]
   discountsApp  DiscountApplicableTo[]
+}
+
+model Category {
+  id           Int        @id @default(autoincrement())
+  name         String
+  description  String?
+  restaurantId Int
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  menu         Menu[]
 }
 
 enum RestaurantStatus {

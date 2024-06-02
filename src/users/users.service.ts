@@ -209,4 +209,31 @@ export class UsersService {
     const resetToken = this.jwtService.sign({}, { expiresIn: '1h' });
     return resetToken;
   }
+  async uploadImage(userId: number, imageUrl: string): Promise<void> {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { imageUrl: imageUrl },
+    });
+  }
+
+  async deleteImage(userId: number): Promise<void> {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { imageUrl: null },
+    });
+  }
 }

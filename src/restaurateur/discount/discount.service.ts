@@ -149,34 +149,4 @@ export class DiscountService {
       where: { id: discountId },
     });
   }
-  async applyDiscountForReferralCode(
-    referralCode: string,
-    discountId: number,
-  ): Promise<void> {
-    const userWithReferralCode = await this.prisma.user.findFirst({
-      where: { referralCode },
-    });
-
-    if (!userWithReferralCode) {
-      throw new NotFoundException(
-        `User with referral code ${referralCode} not found`,
-      );
-    }
-
-    const discount = await this.prisma.discount.findUnique({
-      where: { id: discountId },
-    });
-
-    if (!discount) {
-      throw new NotFoundException(`Discount with id ${discountId} not found`);
-    }
-
-    // Appliquer la réduction à l'utilisateur avec le code de parrainage
-    await this.prisma.discountApplicableTo.create({
-      data: {
-        discount: { connect: { id: discountId } },
-        user: { connect: { id: userWithReferralCode.id } },
-      },
-    });
-  }
 }

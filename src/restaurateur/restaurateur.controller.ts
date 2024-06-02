@@ -29,6 +29,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from './Multer/multer.config';
 import { AuthGuard } from 'src/authentification/auth.guard';
 import { ReqUser } from 'src/authentification/decorators/req-user.decorator';
+import { CategoryDto } from './dto/CategorieDto';
 
 @Controller('restaurants')
 @UseGuards(AuthGuard)
@@ -89,6 +90,24 @@ export class RestaurateurController {
     @Body('restaurantId') restaurantId: number,
   ): Promise<Restaurant> {
     return this.restaurateurService.switchRestaurant(+ownerId, restaurantId);
+  }
+  @Post('/categorie/:restaurantId')
+  async createCategory(
+    @Param('restaurantId') restaurantId: string,
+    @Body() categoryDto: CategoryDto,
+  ): Promise<any> {
+    const category = await this.restaurateurService.createCategory(
+      +restaurantId,
+      categoryDto,
+    );
+    return category;
+  }
+  @Post('categories/:categoryId/menus/:menuId')
+  async addMenuToCategory(
+    @Param('categoryId') categoryId: string,
+    @Param('menuId') menuId: string,
+  ) {
+    return this.restaurateurService.addMenuToCategory(+categoryId, +menuId);
   }
   @Post(':id/menus')
   async createMenu(

@@ -6,6 +6,7 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { RegisterRestaurantDto } from './dto/RegisterRestaurantDto';
 import {
+  Category,
   Menu,
   MenuItem,
   Prisma,
@@ -19,6 +20,7 @@ import { MenuDto } from './dto/MenuDto';
 import { MenuItemDto } from './dto/MenuItemDto';
 import { entityType } from './restaurateur.entity';
 import { SubmitRestaurantRequestDto } from './dto/SubmitRestaurantRequestDto';
+import { CategoryDto } from './dto/CategorieDto';
 
 @Injectable()
 export class RestaurateurService {
@@ -177,6 +179,63 @@ export class RestaurateurService {
       throw new NotFoundException();
     }
     return restaurant;
+  }
+  async createCategory(
+    restaurantId: number,
+    categoryDto: CategoryDto,
+  ): Promise<Category> {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    const category = await this.prisma.category.create({
+      data: {
+        name: categoryDto.name,
+        description: categoryDto.description,
+        restaurant: { connect: { id: restaurantId } },
+      },
+    });
+
+    return category;
+  }
+  async addMenuToCategory(
+    categoryId: number,
+    menuId: number,
+  ): Promise<Category> {
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      include: { menu: true },
+    });
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    const menu = await this.prisma.menu.findUnique({
+      where: { id: menuId },
+    });
+    if (!menu) {
+      throw new NotFoundException('Menu not found');
+    }
+
+    await this.prisma.category.update({
+      where: { id: categoryId },
+      data: {
+        menu: {
+          connect: { id: menuId },
+        },
+      },
+    });
+
+    // Fetch the updated category with the connected menus
+    const updatedCategory = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      include: { menu: true },
+    });
+
+    return updatedCategory;
   }
   async createMenu(restaurantId: number, menuDto: MenuDto): Promise<Menu> {
     const restaurant = await this.prisma.restaurant.findUnique({
