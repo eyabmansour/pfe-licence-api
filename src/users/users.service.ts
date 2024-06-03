@@ -82,7 +82,6 @@ export class UsersService {
     userId: number,
     updatedData: Partial<RegisterUsersDto>,
   ): Promise<User> {
-    // Vérifier si l'utilisateur existe
     const existingUser = await this.prisma.user.findUnique({
       where: { id: userId },
     });

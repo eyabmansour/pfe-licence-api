@@ -67,7 +67,7 @@ export class MailService {
     await this.transporter.sendMail(mailOptions);
   }
   async sendPasswordResetEmail(email: string, token: string) {
-    const url = `http://your-app-url/reset-password?token=${token}`;
+    const url = `${process.env.FRONT_END_URL}/auth/reset?token=${token}`;
 
     const mailOptions: nodemailer.SendMailOptions = {
       from: process.env.SMTP_USERNAME,

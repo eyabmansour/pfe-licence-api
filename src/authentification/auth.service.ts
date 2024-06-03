@@ -2,6 +2,7 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -13,6 +14,10 @@ import { RegisterUsersDto } from './dto/register-user.dto';
 import { User } from 'src/users/users.model';
 import { IJwtPayload } from './interfaces/jwt-payload.interface';
 import { $Enums, RoleCodeEnum } from '@prisma/client';
+import { ForgetPasswordDto } from './dto/forget-password.dto';
+import { ForgetPasswordResponse } from './dto/forget-password.response';
+import { OperationStatusResponse } from 'src/common/filters/dto/operation-status.response';
+import { MailService } from 'src/common/filters/MailService';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +25,7 @@ export class AuthService {
     private readonly prismaService: PrismaService,
     private jwtService: JwtService,
     private readonly usersService: UsersService,
+    private mailService: MailService,
   ) {}
 
   async login(loginDto: LoginDto): Promise<any> {
@@ -105,5 +111,63 @@ export class AuthService {
       }
     }
     return user;
+  }
+
+  private generateResetToken(userId: number): string {
+    // Generate a unique token using JWT
+    const resetToken = this.jwtService.sign(
+      { sub: userId },
+      {
+        expiresIn: process.env.JWT_PASSWORD_EXPIRES_IN,
+        secret: process.env.JWT_PASSWORD_SECRET,
+      },
+    );
+    return resetToken;
+  }
+
+  async forgetPassword(
+    forgetPasswordDto: ForgetPasswordDto,
+  ): Promise<OperationStatusResponse> {
+    const { email } = forgetPasswordDto;
+    const user = await this.prismaService.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('User not found!');
+    }
+
+    const token = this.generateResetToken(user.id);
+
+    await this.mailService.sendPasswordResetEmail(user.email, token);
+
+    return { status: true };
+  }
+
+  async resetPassword(resetToken: string, newPassword: string): Promise<void> {
+    // Example JWT token verification:
+    let decodedToken: any;
+    try {
+      decodedToken = this.jwtService.verify(resetToken, {
+        secret: process.env.JWT_PASSWORD_SECRET,
+      });
+    } catch (error) {
+      throw new NotFoundException('Invalid or expired reset token');
+    }
+
+    // Retrieve user associated with the reset token
+    const user = await this.prismaService.user.findUnique({
+      where: { id: +decodedToken.sub },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    await this.prismaService.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
   }
 }

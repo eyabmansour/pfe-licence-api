@@ -7,6 +7,9 @@ import { RoleCodeEnum } from '@prisma/client';
 import { MinRole } from 'src/roles/min-role.decorator';
 import { UserRole } from 'src/roles/user-role.model';
 import { MailService } from 'src/common/filters/MailService';
+import { ForgetPasswordDto } from './dto/forget-password.dto';
+import { OperationStatusResponse } from 'src/common/filters/dto/operation-status.response';
+import { ResetPasswordDto } from 'src/users/dto.ts/reset-password.dto';
 @Controller('/auth')
 export class AuthController {
   constructor(
@@ -59,5 +62,18 @@ export class AuthController {
       });
     }
     return response.status(200).json(updateUserRole);
+  }
+
+  @Post('forget-password')
+  async forgetPassword(
+    @Body()
+    forgetPasswordDto: ForgetPasswordDto,
+  ): Promise<OperationStatusResponse> {
+    return this.authService.forgetPassword(forgetPasswordDto);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() resetDto: ResetPasswordDto): Promise<void> {
+    await this.authService.resetPassword(resetDto.token, resetDto.newPassword);
   }
 }
