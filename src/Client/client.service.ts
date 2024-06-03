@@ -82,6 +82,7 @@ export class ClientService {
   }
   async createOrder(
     userId: number,
+    restaurant_id: number,
     orderDetails: CreateOrderDto,
   ): Promise<Order> {
     const user = await this.prisma.user.findUnique({
@@ -94,7 +95,10 @@ export class ClientService {
     }
 
     const menuItems = await this.prisma.menuItem.findMany({
-      where: { id: { in: orderDetails.items.map((item) => item.id) } },
+      where: {
+        id: { in: orderDetails.items.map((item) => item.id) },
+        restaurant_id,
+      },
     });
     if (menuItems.length !== orderDetails.items.length) {
       throw new BadRequestException('One or more items not found in the menu');
@@ -154,19 +158,17 @@ export class ClientService {
 
       const applicableDiscounts =
         await this.prisma.discountApplicableTo.findMany({
-          where: { menuItemId: item.id },
+          where: { menuItemId: item.id, discount: { isActive: true } },
           include: { discount: true },
         });
-
+      const tempPrice = itemPrice;
       for (const applicableDiscount of applicableDiscounts) {
-        if (applicableDiscount.discount.isActive) {
-          if (applicableDiscount.discount.type === DiscountType.PERCENTAGE) {
-            itemPrice -= itemPrice * (applicableDiscount.discount.value / 100);
-          } else if (
-            applicableDiscount.discount.type === DiscountType.FIXED_AMOUNT
-          ) {
-            itemPrice -= applicableDiscount.discount.value;
-          }
+        if (applicableDiscount.discount.type === DiscountType.PERCENTAGE) {
+          itemPrice -= tempPrice * (applicableDiscount.discount.value / 100);
+        } else if (
+          applicableDiscount.discount.type === DiscountType.FIXED_AMOUNT
+        ) {
+          itemPrice -= applicableDiscount.discount.value;
         }
       }
       totalPrice += itemPrice * quantity;
@@ -221,6 +223,7 @@ export class ClientService {
   ): Promise<Order> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
+      include: { items: true },
     });
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -231,31 +234,41 @@ export class ClientService {
       );
     }
 
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        items: {
-          createMany: {
-            data: items.map((item) => ({
-              menuItemId: item.id,
-              quantity: item.quantity,
-            })),
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const existingItem = order.items.find(
+        (orderItem) => orderItem.menuItemId === item.id,
+      );
+      if (existingItem)
+        await this.prisma.orderItem.update({
+          where: { id: existingItem.id },
+          data: { quantity: existingItem.quantity + item.quantity },
+        });
+      else
+        await this.prisma.orderItem.create({
+          data: {
+            orderId: order.id,
+            menuItemId: item.id,
+            quantity: item.quantity,
           },
-        },
-      },
-    });
+        });
+    }
+
     const updatedOrder = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: { items: { include: { menuItem: true } } },
     });
     const totalPrice = await this.calculateTotalPrice(
       updatedOrder.items.map((item) => item.menuItem),
-      updatedOrder.items,
+      updatedOrder.items.map((item) => ({
+        id: item.menuItemId,
+        quantity: item.quantity,
+      })),
     );
 
     await this.prisma.order.update({
       where: { id: orderId },
-      data: { totalPrice: order.totalPrice + totalPrice },
+      data: { totalPrice: totalPrice },
     });
 
     const finalUpdatedOrder = await this.prisma.order.findUnique({
@@ -272,6 +285,7 @@ export class ClientService {
   ): Promise<Order> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
+      include: { items: true },
     });
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -281,14 +295,23 @@ export class ClientService {
         `Cannot modify an order that is currently ${order.status.toLowerCase()}`,
       );
     }
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        items: {
-          deleteMany: { menuItemId: { in: items.map((item) => item.id) } },
-        },
-      },
-    });
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const existingItem = order.items.find(
+        (orderItem) => orderItem.menuItemId === item.id,
+      );
+      if (existingItem) {
+        if (existingItem.quantity - item.quantity > 0)
+          await this.prisma.orderItem.update({
+            where: { id: existingItem.id },
+            data: { quantity: existingItem.quantity - item.quantity },
+          });
+        else
+          await this.prisma.orderItem.delete({
+            where: { id: existingItem.id },
+          });
+      }
+    }
 
     const updatedOrder = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -297,12 +320,15 @@ export class ClientService {
 
     const totalPrice = await this.calculateTotalPrice(
       updatedOrder.items.map((item) => item.menuItem),
-      updatedOrder.items,
+      updatedOrder.items.map((item) => ({
+        id: item.menuItemId,
+        quantity: item.quantity,
+      })),
     );
 
     await this.prisma.order.update({
       where: { id: orderId },
-      data: { totalPrice: order.totalPrice - totalPrice },
+      data: { totalPrice: totalPrice },
     });
 
     const finalUpdatedOrder = await this.prisma.order.findUnique({

@@ -66,12 +66,12 @@ model Menu {
   id            Int        @id @default(autoincrement())
   name          String     @unique
   description   String?
-  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id])
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   restaurant_id Int
   menuItems     MenuItem[]
   imageUrl      String?
-  category      Category?  @relation(fields: [categoryId], references: [id])
-  categoryId    Int?
+  category      Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId    Int
 }
 
 model MenuItem {
@@ -79,10 +79,10 @@ model MenuItem {
   name          String
   description   String
   price         Float
-  restaurant    Restaurant             @relation(fields: [restaurant_id], references: [id])
+  restaurant    Restaurant             @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   restaurant_id Int
   menu_id       Int?
-  menu          Menu?                  @relation(fields: [menu_id], references: [id])
+  menu          Menu?                  @relation(fields: [menu_id], references: [id], onDelete: Cascade)
   imageUrl      String?
   order         OrderItem[]
   discountsApp  DiscountApplicableTo[]
@@ -93,7 +93,7 @@ model Category {
   name         String
   description  String?
   restaurantId Int
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   menu         Menu[]
 }
 
@@ -115,7 +115,7 @@ model RestaurantRequest {
 model Order {
   id                    Int         @id @default(autoincrement())
   userId                Int
-  user                  User        @relation(fields: [userId], references: [id])
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   items                 OrderItem[]
   totalPrice            Float
   deliveryAddress       String?

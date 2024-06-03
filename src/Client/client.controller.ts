@@ -10,11 +10,19 @@ import {
   Patch,
 } from '@nestjs/common';
 import { ClientService } from './client.service';
-import { Menu, MenuItem, Order, OrderStatus, Restaurant } from '@prisma/client';
+import {
+  Menu,
+  MenuItem,
+  Order,
+  OrderStatus,
+  Restaurant,
+  User,
+} from '@prisma/client';
 import { RestaurantQueryDto } from './dto/client.dto';
 import { AuthGuard } from 'src/authentification/auth.guard';
 import { CreateOrderDto } from './dto/client-order.dto';
 import { OrderItemDto } from './dto/order-item.dto';
+import { ReqUser } from 'src/authentification/decorators/req-user.decorator';
 
 @Controller('clients')
 @UseGuards(AuthGuard)
@@ -35,12 +43,17 @@ export class ClientController {
     return await this.clientService.getMenuById(+menuId);
   }
 
-  @Post('order/:userId')
+  @Post('order/:restaurantId')
   async createOrder(
-    @Param('userId') userId: string,
+    @Param('restaurantId') restaurantId: string,
     @Body() orderDetails: CreateOrderDto,
+    @ReqUser() user: User,
   ): Promise<Order> {
-    return await this.clientService.createOrder(+userId, orderDetails);
+    return await this.clientService.createOrder(
+      user.id,
+      +restaurantId,
+      orderDetails,
+    );
   }
   @Get('order/:orderId')
   async getOrderDetails(@Param('orderId') orderId: string): Promise<Order> {
