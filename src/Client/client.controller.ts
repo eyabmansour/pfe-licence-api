@@ -96,7 +96,7 @@ export class ClientController {
     return this.clientService.updateOrderStatus(+orderId, status);
   }
   @Get('count/:userId')
-  async countUserOrders(@Param('userId') userId: string): Promise<number> {
-    return this.clientService.countUserOrders(Number(userId));
+  async countUserOrders(@ReqUser() user: User): Promise<number> {
+    return this.clientService.countUserOrders(Number(user.id));
   }
 }

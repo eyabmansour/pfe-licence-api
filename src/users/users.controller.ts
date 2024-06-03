@@ -9,10 +9,7 @@ import {
   Res,
   Req,
   UseGuards,
-  HttpException,
-  InternalServerErrorException,
   Patch,
-  Query,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -34,8 +31,8 @@ import { multerConfig } from '../restaurateur/Multer/multer.config';
 @UseGuards(AuthGuard)
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
-
   @Get('/allUsers')
+  @MinRole(UserRole.ADMINISTRATOR)
   async getAllUsers(
     @Req() request: Request,
     @Res() response: Response,
@@ -60,6 +57,7 @@ export class UsersController {
     return response.status(201).json(newUser);
   }
   @Put(':id')
+  @MinRole(UserRole.ADMINISTRATOR)
   async updateUser(
     @Param('id') userId: string,
     @Body() userData: User,
@@ -75,6 +73,7 @@ export class UsersController {
     return response.status(200).json(updatedUser);
   }
   @Delete(':id')
+  @MinRole(UserRole.ADMINISTRATOR)
   async deleteUser(
     @Param('id') userId: string,
     @Res() response: Response,
@@ -91,21 +90,21 @@ export class UsersController {
       message: 'User deleted successfully',
     });
   }
-  @Patch('/updateProfil/:id')
+  @Patch('/updateProfil')
   async updateUserProfile(
-    @Param('id') userId: string,
+    @ReqUser() user: User,
     @Body() updateData: Partial<RegisterUsersDto>,
   ) {
     const updatedUser = await this.userService.updateUserProfile(
-      +userId,
+      user.id,
       updateData,
     );
     return updatedUser;
   }
 
-  @Delete('/deleteProfil/:id')
-  async deleteUserProfile(@Param('id') userId: string) {
-    await this.userService.deleteUserProfile(+userId);
+  @Delete('/deleteProfil')
+  async deleteUserProfile(@ReqUser() user: User) {
+    await this.userService.deleteUserProfile(user.id);
     return { message: 'User profile deleted successfully' };
   }
 
@@ -130,19 +129,19 @@ export class UsersController {
   async resetPassword(@Body() resetDto: ResetPasswordDto): Promise<void> {
     await this.userService.resetPassword(resetDto.token, resetDto.newPassword);
   }
-  @Post('/images/:id')
+  @Post('/images')
   @UseInterceptors(FileInterceptor('image', multerConfig))
   async uplodeImage(
-    @Param('id') userId: string,
+    @ReqUser() user: User,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const imageUrl = file.path;
-    await this.userService.uploadImage(+userId, imageUrl);
+    await this.userService.uploadImage(user.id, imageUrl);
     return { message: 'Image Upload successfuly ', imageUrl };
   }
-  @Delete('/images/:id')
-  async deleteImage(@Param('id') userId: string) {
-    await this.userService.deleteImage(+userId);
+  @Delete('/images')
+  async deleteImage(@ReqUser() user: User) {
+    await this.userService.deleteImage(user.id);
     return { message: 'Image deleted successfully' };
   }
 }

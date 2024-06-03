@@ -42,8 +42,8 @@ export class RestaurateurController {
   ): Promise<Restaurant> {
     return this.restaurateurService.register(restaurantData, user.id);
   }
-  @MinRole(UserRole.RESTAURATEUR)
   @Get('/:entityType')
+  @MinRole(UserRole.RESTAURATEUR)
   async getEntities(
     @Param('entityType') entityType: 'restaurant' | 'menu' | 'menuItem',
   ): Promise<any[]> {
@@ -52,6 +52,10 @@ export class RestaurateurController {
   @Get()
   async getUserRestaurants(@ReqUser() user: User): Promise<Restaurant[]> {
     return this.restaurateurService.getUserRestaurants(user.id);
+  }
+  @Get(':id/menus')
+  async getRestaurantMenus(@Param('id') id: string) {
+    return this.restaurateurService.getRestaurantMenus(+id);
   }
   /* @Get('users/:userId/restaurants')
   @MinRole(UserRole.ADMINISTRATOR)
@@ -86,10 +90,10 @@ export class RestaurateurController {
   }
   @Patch('/switch/:id')
   async switchRestaurant(
-    @Param('id') ownerId: string,
+    @ReqUser() user: User,
     @Body('restaurantId') restaurantId: number,
   ): Promise<Restaurant> {
-    return this.restaurateurService.switchRestaurant(+ownerId, restaurantId);
+    return this.restaurateurService.switchRestaurant(user.id, restaurantId);
   }
   @Post('/categorie/:restaurantId')
   async createCategory(

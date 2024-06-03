@@ -107,6 +107,18 @@ export class RestaurateurService {
       );
     }
   }
+  async getRestaurantMenus(restaurantId: number): Promise<Menu[]> {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      include: { menu: true },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    return restaurant.menu;
+  }
   /*
   async getRestaurantsByUserId(userId: number): Promise<any> {
     const userRestaurants = await this.prisma.user.findUnique({
