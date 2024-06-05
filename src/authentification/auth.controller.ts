@@ -48,7 +48,7 @@ export class AuthController {
   @MinRole(UserRole.ADMINISTRATOR)
   async updateUserRole(
     @Param('id') userId: string,
-    @Body() newRoleCode: RoleCodeEnum,
+    @Body('newRoleCode') newRoleCode: RoleCodeEnum,
     @Res() response: Response,
   ): Promise<any> {
     const updateUserRole = await this.authService.updateUserRole(

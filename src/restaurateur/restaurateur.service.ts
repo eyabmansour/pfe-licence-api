@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { RegisterRestaurantDto } from './dto/RegisterRestaurantDto';
@@ -14,6 +16,7 @@ import {
   RestaurantRequest,
   RestaurantStatus,
   RoleCodeEnum,
+  User,
 } from '@prisma/client';
 import { validate } from 'class-validator';
 import { MenuDto } from './dto/MenuDto';
@@ -107,7 +110,10 @@ export class RestaurateurService {
       );
     }
   }
-  async getRestaurantMenus(restaurantId: number): Promise<Menu[]> {
+  async getRestaurantMenus(
+    restaurantId: number,
+    ownerId: number,
+  ): Promise<Menu[]> {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
       include: { menu: true },
@@ -115,6 +121,12 @@ export class RestaurateurService {
 
     if (!restaurant) {
       throw new NotFoundException('Restaurant not found');
+    }
+
+    if (restaurant.ownerId !== ownerId) {
+      throw new UnauthorizedException(
+        "You do not have permission to access this restaurant's menus",
+      );
     }
 
     return restaurant.menu;
@@ -130,12 +142,18 @@ export class RestaurateurService {
 */
   async submitRestaurantRequest(
     restaurantId: number,
+    ownerId: number,
   ): Promise<RestaurantRequest> {
     const existingRestaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
     });
     if (!existingRestaurant) {
       throw new NotFoundException('Restaurant not found');
+    }
+    if (existingRestaurant.ownerId !== ownerId) {
+      throw new UnauthorizedException(
+        "You do not have permission to access this restaurant's menus",
+      );
     }
     const request = await this.prisma.restaurantRequest.create({
       data: {
@@ -249,7 +267,11 @@ export class RestaurateurService {
 
     return updatedCategory;
   }
-  async createMenu(restaurantId: number, menuDto: MenuDto): Promise<Menu> {
+  async createMenu(
+    restaurantId: number,
+    menuDto: MenuDto,
+    ownerId: User,
+  ): Promise<Menu> {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: {
         id: restaurantId,
@@ -266,6 +288,7 @@ export class RestaurateurService {
         name: menuDto.name,
         description: menuDto.description,
         restaurant: { connect: { id: restaurantId } },
+        owner: { connect: { id: ownerId.id } },
       },
     });
     return menu;
@@ -298,6 +321,40 @@ export class RestaurateurService {
       where: { id: menuId },
     });
   }
+  async updateMenu(
+    restaurantId: number,
+    menuId: number,
+    ownerId: number,
+    menuDto: MenuDto,
+  ) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    if (restaurant.ownerId !== ownerId) {
+      throw new ForbiddenException(
+        'You do not have permission to update this menu',
+      );
+    }
+
+    const menu = await this.prisma.menu.findUnique({
+      where: { id: menuId },
+    });
+
+    if (!menu) {
+      throw new NotFoundException('Menu not found');
+    }
+
+    return this.prisma.menu.update({
+      where: { id: menuId },
+      data: { ...menuDto },
+    });
+  }
+
   async addMenuItemToMenu(
     MenuId: number,
     menuItemDto: MenuItemDto,

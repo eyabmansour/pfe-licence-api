@@ -42,7 +42,6 @@ export class DiscountService {
     const discount = await this.prisma.discount.findUnique({
       where: { id: discountId },
     });
-
     if (!discount) {
       throw new NotFoundException(`Discount with id ${discountId} not found`);
     }
@@ -137,7 +136,16 @@ export class DiscountService {
       }),
     );
   }
-  async deleteDiscount(discountId: number): Promise<void> {
+  async getDiscountsByOwner(ownerId: number): Promise<Discount[]> {
+    return await this.prisma.discount.findMany({
+      where: {
+        restaurant: {
+          ownerId: ownerId,
+        },
+      },
+    });
+  }
+  async deleteDiscount(discountId: number): Promise<string> {
     const discount = await this.prisma.discount.findUnique({
       where: { id: discountId },
     });
@@ -148,5 +156,6 @@ export class DiscountService {
     await this.prisma.discount.delete({
       where: { id: discountId },
     });
+    return `Discount with id ${discountId} has been deleted successfully`;
   }
 }

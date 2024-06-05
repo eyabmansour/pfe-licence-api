@@ -70,7 +70,7 @@ export class AuthService {
   }
   async updateUserRole(
     userId: number,
-    newRoleCode: $Enums.RoleCodeEnum,
+    newRoleCode: RoleCodeEnum,
   ): Promise<any> {
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
@@ -80,6 +80,7 @@ export class AuthService {
     if (!user) {
       throw new Error(`User with ID ${userId} not found.`);
     }
+
     const newRole = await this.prismaService.role.findUnique({
       where: { code: newRoleCode },
     });
@@ -87,9 +88,14 @@ export class AuthService {
     if (!newRole) {
       throw new Error(`Role with code ${newRoleCode} not found.`);
     }
+
     await this.prismaService.user.update({
       where: { id: userId },
-      data: { role: { connect: { id: newRole.id } } },
+      data: {
+        role: {
+          connect: { id: newRole.id },
+        },
+      },
     });
 
     return { message: 'User role updated successfully.' };

@@ -54,8 +54,8 @@ export class RestaurateurController {
     return this.restaurateurService.getUserRestaurants(user.id);
   }
   @Get(':id/menus')
-  async getRestaurantMenus(@Param('id') id: string) {
-    return this.restaurateurService.getRestaurantMenus(+id);
+  async getRestaurantMenus(@Param('id') id: string, @ReqUser() user: User) {
+    return this.restaurateurService.getRestaurantMenus(+id, user.id);
   }
   /* @Get('users/:userId/restaurants')
   @MinRole(UserRole.ADMINISTRATOR)
@@ -71,9 +71,13 @@ export class RestaurateurController {
   @Post('/request')
   async submitRequest(
     @Body() requestData: SubmitRestaurantRequestDto,
+    @ReqUser() user: User,
   ): Promise<RestaurantRequest> {
     const { restaurantId } = requestData;
-    return this.restaurateurService.submitRestaurantRequest(restaurantId);
+    return this.restaurateurService.submitRestaurantRequest(
+      restaurantId,
+      user.id,
+    );
   }
   @Get('/request/pending')
   @MinRole(UserRole.ADMINISTRATOR)
@@ -110,6 +114,7 @@ export class RestaurateurController {
   async addMenuToCategory(
     @Param('categoryId') categoryId: string,
     @Param('menuId') menuId: string,
+    @ReqUser() user: User,
   ) {
     return this.restaurateurService.addMenuToCategory(+categoryId, +menuId);
   }
@@ -117,9 +122,25 @@ export class RestaurateurController {
   async createMenu(
     @Param('id') restaurantId: string,
     @Body() menuDto: MenuDto,
+    @ReqUser() user: User,
   ): Promise<Menu> {
-    return this.restaurateurService.createMenu(+restaurantId, menuDto);
+    return this.restaurateurService.createMenu(+restaurantId, menuDto, user);
   }
+  @Put('/:restaurantId/:menuId')
+  async updateMenu(
+    @Param('restaurantId') restaurantId: String,
+    @Param('menuId') menuId: string,
+    @Body() menuDto: MenuDto,
+    @ReqUser() user: User,
+  ) {
+    return this.restaurateurService.updateMenu(
+      +restaurantId,
+      +menuId,
+      user.id,
+      menuDto,
+    );
+  }
+
   @Delete('menu/delete/:restaurantId/:menuId')
   @MinRole(UserRole.RESTAURATEUR)
   async deleteMenu(

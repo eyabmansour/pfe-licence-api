@@ -30,12 +30,15 @@ export class ClientController {
   constructor(private readonly clientService: ClientService) {}
 
   @Get('search')
-  async search(@Query() queryDto: RestaurantQueryDto): Promise<{
+  async search(
+    @Query() queryDto: RestaurantQueryDto,
+    @ReqUser() user: User,
+  ): Promise<{
     restaurants: Restaurant[];
     menus: Menu[];
     menuItems: MenuItem[];
   }> {
-    return this.clientService.search(queryDto);
+    return this.clientService.search(user.id, queryDto);
   }
 
   @Get(':id')

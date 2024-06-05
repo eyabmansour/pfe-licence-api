@@ -10,10 +10,13 @@ import {
 } from '@nestjs/common';
 import { DiscountService } from './discount.service';
 
-import { Discount, DiscountApplicableTo, Prisma } from '@prisma/client';
+import { Discount, DiscountApplicableTo, Prisma, User } from '@prisma/client';
 import { CreateDiscountDto } from './dto/CreateDiscountDto ';
 import { DiscountApplicableToDto } from './dto/discountApplicableDto';
 import { UpdateDiscountDto } from './dto/UpdateDiscountDto';
+import { UserRole } from 'src/roles/user-role.model';
+import { ReqUser } from 'src/authentification/decorators/req-user.decorator';
+import { MinRole } from 'src/roles/min-role.decorator';
 
 @Controller('discounts')
 export class DiscountController {
@@ -58,6 +61,11 @@ export class DiscountController {
       applicableTo,
     );
   }
+  @Get('dis')
+  @MinRole(UserRole.RESTAURATEUR)
+  async getDiscounts(@ReqUser() user: User): Promise<Discount[]> {
+    return this.discountService.getDiscountsByOwner(user.id);
+  }
   @Post('/applicableToAll/:discountId/:restaurantId')
   async applyDiscountToMenuItems(
     @Param('discountId') discountId: string,
@@ -70,8 +78,10 @@ export class DiscountController {
       applicableToAll,
     );
   }
-  @Delete(':discountId')
-  async deleteDiscount(@Param() discountId: string): Promise<void> {
+  @Delete('/:discountId')
+  async deleteDiscount(
+    @Param('discountId') discountId: string,
+  ): Promise<string> {
     return await this.discountService.deleteDiscount(+discountId);
   }
 }

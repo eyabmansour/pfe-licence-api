@@ -21,7 +21,7 @@ import { OrderItemDto } from './dto/order-item.dto';
 @Injectable()
 export class ClientService {
   constructor(private readonly prisma: PrismaService) {}
-  async search(queryDto: RestaurantQueryDto): Promise<any> {
+  async search(userId: number, queryDto: RestaurantQueryDto): Promise<any> {
     const {
       search,
       sortBy = 'name',

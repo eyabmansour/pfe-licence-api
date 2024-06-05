@@ -26,6 +26,7 @@ model User {
   referralUsages ReferralUsage[]
   discounts      DiscountApplicableTo[]
   imageUrl       String?
+  menu           Menu[]
 }
 
 model Role {
@@ -70,8 +71,10 @@ model Menu {
   restaurant_id Int
   menuItems     MenuItem[]
   imageUrl      String?
-  category      Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  categoryId    Int
+  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId    Int?
+  ownerId       Int
+  owner         User       @relation(fields: [ownerId], references: [id])
 }
 
 model MenuItem {
@@ -89,11 +92,11 @@ model MenuItem {
 }
 
 model Category {
-  id           Int        @id @default(autoincrement())
+  id           Int         @id @default(autoincrement())
   name         String
   description  String?
-  restaurantId Int
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId Int?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id])
   menu         Menu[]
 }
 
