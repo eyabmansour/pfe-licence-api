@@ -24,6 +24,7 @@ import { MenuItemDto } from './dto/MenuItemDto';
 import { entityType } from './restaurateur.entity';
 import { SubmitRestaurantRequestDto } from './dto/SubmitRestaurantRequestDto';
 import { CategoryDto } from './dto/CategorieDto';
+import { UpdateDiscountDto } from './discount/dto/UpdateDiscountDto';
 
 @Injectable()
 export class RestaurateurService {
@@ -210,63 +211,6 @@ export class RestaurateurService {
     }
     return restaurant;
   }
-  async createCategory(
-    restaurantId: number,
-    categoryDto: CategoryDto,
-  ): Promise<Category> {
-    const restaurant = await this.prisma.restaurant.findUnique({
-      where: { id: restaurantId },
-    });
-    if (!restaurant) {
-      throw new NotFoundException('Restaurant not found');
-    }
-
-    const category = await this.prisma.category.create({
-      data: {
-        name: categoryDto.name,
-        description: categoryDto.description,
-        restaurant: { connect: { id: restaurantId } },
-      },
-    });
-
-    return category;
-  }
-  async addMenuToCategory(
-    categoryId: number,
-    menuId: number,
-  ): Promise<Category> {
-    const category = await this.prisma.category.findUnique({
-      where: { id: categoryId },
-      include: { menu: true },
-    });
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
-
-    const menu = await this.prisma.menu.findUnique({
-      where: { id: menuId },
-    });
-    if (!menu) {
-      throw new NotFoundException('Menu not found');
-    }
-
-    await this.prisma.category.update({
-      where: { id: categoryId },
-      data: {
-        menu: {
-          connect: { id: menuId },
-        },
-      },
-    });
-
-    // Fetch the updated category with the connected menus
-    const updatedCategory = await this.prisma.category.findUnique({
-      where: { id: categoryId },
-      include: { menu: true },
-    });
-
-    return updatedCategory;
-  }
   async createMenu(
     restaurantId: number,
     menuDto: MenuDto,
@@ -354,45 +298,213 @@ export class RestaurateurService {
       data: { ...menuDto },
     });
   }
-
-  async addMenuItemToMenu(
-    MenuId: number,
-    menuItemDto: MenuItemDto,
-  ): Promise<any> {
+  async createCategory(
+    menuId: number,
+    categoryDto: CategoryDto,
+  ): Promise<Category> {
     const menu = await this.prisma.menu.findUnique({
-      where: { id: MenuId },
-      include: { restaurant: true },
+      where: { id: menuId },
     });
     if (!menu) {
-      throw new NotFoundException('Menu Not Found');
+      throw new NotFoundException('Menu not found');
     }
+
+    const category = await this.prisma.category.create({
+      data: {
+        name: categoryDto.name,
+        description: categoryDto.description,
+        menu: { connect: { id: menuId } },
+        restaurant: { connect: { id: menu.restaurant_id } },
+      },
+    });
+
+    return category;
+  }
+  async getCategories(menuId: number, userId: number): Promise<Category[]> {
+    // Vérifiez si le menu existe et appartient à l'utilisateur
+    const menu = await this.prisma.menu.findUnique({
+      where: { id: menuId },
+      include: { restaurant: true },
+    });
+
+    if (!menu) {
+      throw new NotFoundException('Menu not found');
+    }
+
+    if (menu.restaurant.ownerId !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to access these categories',
+      );
+    }
+
+    const categories = await this.prisma.category.findMany({
+      where: { menuId: menuId },
+    });
+
+    if (!categories || categories.length === 0) {
+      throw new NotFoundException('No categories found');
+    }
+
+    return categories;
+  }
+  async getMenuItems(categoryId: number, userId: number): Promise<MenuItem[]> {
+    // Vérifiez si la catégorie existe et appartient à l'utilisateur
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      include: { menu: { include: { restaurant: true } } },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    if (category.menu.restaurant.ownerId !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to access these menu items',
+      );
+    }
+
+    const menuItems = await this.prisma.menuItem.findMany({
+      where: { categoryId: categoryId },
+    });
+
+    if (!menuItems || menuItems.length === 0) {
+      throw new NotFoundException('No menu items found for this category');
+    }
+
+    return menuItems;
+  }
+
+  async addMenuItemToCategory(
+    categoryId: number,
+    menuItemDto: MenuItemDto,
+    ownerId: number,
+  ): Promise<MenuItem> {
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      include: { menu: { include: { restaurant: true } } },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    if (category.menu.restaurant.ownerId !== ownerId) {
+      throw new ForbiddenException(
+        'You do not have permission to add an item to this category',
+      );
+    }
+
     const menuItem = await this.prisma.menuItem.create({
       data: {
         name: menuItemDto.name,
         description: menuItemDto.description,
         price: menuItemDto.price,
-        menu: { connect: { id: MenuId } },
-        restaurant: { connect: { id: menu.restaurant.id } },
+        category: { connect: { id: categoryId } },
+        menu: { connect: { id: category.menu.id } },
+        restaurant: { connect: { id: category.menu.restaurant.id } },
       },
     });
+
     return menuItem;
   }
-  async deleteMenuItem(menuId: number, menuItemId: number): Promise<void> {
+  async updateMenuItem(
+    menuItemId: number,
+    menuItemDto: MenuItemDto,
+    ownerId: number,
+  ): Promise<MenuItem> {
     const menuItem = await this.prisma.menuItem.findUnique({
       where: { id: menuItemId },
-      include: { menu: true },
+      include: { menu: { include: { restaurant: true } } },
     });
+
     if (!menuItem) {
-      throw new NotFoundException('MenuIem not found');
+      throw new NotFoundException('MenuItem not found');
     }
-    if (menuItem.menu.id !== menuId) {
-      throw new BadRequestException(
-        'MenuItem does not belong to the specified menu',
+
+    if (menuItem.menu.restaurant.ownerId !== ownerId) {
+      throw new ForbiddenException(
+        'You do not have permission to update this menu item',
       );
     }
+
+    const updatedMenuItem = await this.prisma.menuItem.update({
+      where: { id: menuItemId },
+      data: { ...menuItemDto },
+    });
+
+    return updatedMenuItem;
+  }
+
+  async deleteMenuItem(menuItemId: number, ownerId: number): Promise<void> {
+    const menuItem = await this.prisma.menuItem.findUnique({
+      where: { id: menuItemId },
+      include: { menu: { include: { restaurant: true } } },
+    });
+
+    if (!menuItem) {
+      throw new NotFoundException('MenuItem not found');
+    }
+
+    if (menuItem.menu.restaurant.ownerId !== ownerId) {
+      throw new ForbiddenException(
+        'You do not have permission to delete this menu item',
+      );
+    }
+
     await this.prisma.menuItem.delete({
       where: { id: menuItemId },
     });
+  }
+
+  async updateCategory(
+    updateCategoryDto: CategoryDto,
+    userId: number,
+    categoryId: number,
+  ): Promise<Category> {
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      include: { menu: { include: { restaurant: true } } },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    if (category.menu.restaurant.ownerId !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to update this category',
+      );
+    }
+
+    const updatedCategory = await this.prisma.category.update({
+      where: { id: categoryId },
+      data: updateCategoryDto,
+    });
+
+    return updatedCategory;
+  }
+  async deleteCategory(userId: number, categoryId: number): Promise<Category> {
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      include: { menu: { include: { restaurant: true } } },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    if (category.menu.restaurant.ownerId !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to delete this category',
+      );
+    }
+
+    const deletedCategory = await this.prisma.category.delete({
+      where: { id: categoryId },
+    });
+
+    return deletedCategory;
   }
 
   async uploadImage(

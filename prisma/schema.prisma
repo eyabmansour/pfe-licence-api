@@ -71,8 +71,7 @@ model Menu {
   restaurant_id Int
   menuItems     MenuItem[]
   imageUrl      String?
-  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  categoryId    Int?
+  categories    Category[]
   ownerId       Int
   owner         User       @relation(fields: [ownerId], references: [id])
 }
@@ -89,6 +88,8 @@ model MenuItem {
   imageUrl      String?
   order         OrderItem[]
   discountsApp  DiscountApplicableTo[]
+  categoryId    Int?
+  category      Category?              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
 model Category {
@@ -96,8 +97,10 @@ model Category {
   name         String
   description  String?
   restaurantId Int?
-  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id])
-  menu         Menu[]
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuId       Int?
+  menu         Menu?       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  menuItems    MenuItem[]
 }
 
 enum RestaurantStatus {

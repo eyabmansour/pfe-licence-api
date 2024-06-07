@@ -10,9 +10,12 @@ import {
   Delete,
   Put,
   UseGuards,
+  Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { RestaurateurService } from './restaurateur.service';
 import {
+  Category,
   Menu,
   Restaurant,
   RestaurantRequest,
@@ -99,33 +102,7 @@ export class RestaurateurController {
   ): Promise<Restaurant> {
     return this.restaurateurService.switchRestaurant(user.id, restaurantId);
   }
-  @Post('/categorie/:restaurantId')
-  async createCategory(
-    @Param('restaurantId') restaurantId: string,
-    @Body() categoryDto: CategoryDto,
-  ): Promise<any> {
-    const category = await this.restaurateurService.createCategory(
-      +restaurantId,
-      categoryDto,
-    );
-    return category;
-  }
-  @Post('categories/:categoryId/menus/:menuId')
-  async addMenuToCategory(
-    @Param('categoryId') categoryId: string,
-    @Param('menuId') menuId: string,
-    @ReqUser() user: User,
-  ) {
-    return this.restaurateurService.addMenuToCategory(+categoryId, +menuId);
-  }
-  @Post(':id/menus')
-  async createMenu(
-    @Param('id') restaurantId: string,
-    @Body() menuDto: MenuDto,
-    @ReqUser() user: User,
-  ): Promise<Menu> {
-    return this.restaurateurService.createMenu(+restaurantId, menuDto, user);
-  }
+
   @Put('/:restaurantId/:menuId')
   async updateMenu(
     @Param('restaurantId') restaurantId: String,
@@ -140,6 +117,43 @@ export class RestaurateurController {
       menuDto,
     );
   }
+  @Put(':id')
+  async updateCategory(
+    @Param('id') id: string,
+    @Body() updateCategoryDto: CategoryDto,
+    @ReqUser() user: User,
+  ): Promise<Category> {
+    return this.restaurateurService.updateCategory(
+      updateCategoryDto,
+      user.id,
+      +id,
+    );
+  }
+
+  @Delete(':id')
+  async deleteCategory(
+    @Param('id') id: number,
+    @ReqUser() user: User,
+  ): Promise<Category> {
+    return this.restaurateurService.deleteCategory(user.id, id);
+  }
+  @Get('categories/:menuId')
+  async getCategories(@Param('menuId') menuId: number, @ReqUser() user: User) {
+    if (!menuId || !user.id) {
+      throw new BadRequestException('menuId and userId must be provided');
+    }
+    return this.restaurateurService.getCategories(menuId, user.id);
+  }
+  @Get('menu-items/categoryId')
+  async getMenuItems(
+    @Param('categoryId') categoryId: number,
+    @ReqUser() user: User,
+  ) {
+    if (!categoryId || !user.id) {
+      throw new BadRequestException('categoryId and userId must be provided');
+    }
+    return this.restaurateurService.getMenuItems(categoryId, user.id);
+  }
 
   @Delete('menu/delete/:restaurantId/:menuId')
   @MinRole(UserRole.RESTAURATEUR)
@@ -149,20 +163,13 @@ export class RestaurateurController {
   ): Promise<void> {
     return this.restaurateurService.deleteMenu(+restaurantId, +menuId);
   }
-  @Delete('menu/item/delete/:menuId/:menuItemId')
+  @Delete('/delete/:menuId/:menuItemId')
   @MinRole(UserRole.RESTAURATEUR)
   async deleteMenuIem(
-    @Param('menuId') menuId: string,
     @Param('menuItemId') menuItemId: string,
+    @ReqUser() user: User,
   ): Promise<void> {
-    return this.restaurateurService.deleteMenuItem(+menuId, +menuItemId);
-  }
-  @Post('menus/:id/menuItems')
-  async addMenuItemToMenu(
-    @Param('id') menuId: string,
-    @Body() menuItemDto: MenuItemDto,
-  ): Promise<any> {
-    return this.restaurateurService.addMenuItemToMenu(+menuId, menuItemDto);
+    return this.restaurateurService.deleteMenuItem(user.id, +menuItemId);
   }
   @Post(':entityType/:entityId/images')
   @UseInterceptors(FileInterceptor('image', multerConfig))
