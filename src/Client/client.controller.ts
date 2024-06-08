@@ -40,8 +40,11 @@ export class ClientController {
   }> {
     return this.clientService.search(user.id, queryDto);
   }
-
-  @Get(':id')
+  @Get('restaurant/:id')
+  async getRestaurant(@Param('id') restaurantId: number): Promise<Restaurant> {
+    return await this.clientService.getRestaurantById(restaurantId);
+  }
+  @Get('menu/:id')
   async getMenuById(@Param('id') menuId: string): Promise<Menu> {
     return await this.clientService.getMenuById(+menuId);
   }

@@ -25,6 +25,7 @@ import { entityType } from './restaurateur.entity';
 import { SubmitRestaurantRequestDto } from './dto/SubmitRestaurantRequestDto';
 import { CategoryDto } from './dto/CategorieDto';
 import { UpdateDiscountDto } from './discount/dto/UpdateDiscountDto';
+import { UpdateRestaurantDto } from './dto/UpdateRestaurantDto';
 
 @Injectable()
 export class RestaurateurService {
@@ -111,6 +112,34 @@ export class RestaurateurService {
       );
     }
   }
+  async updateRestaurant(
+    restaurantId: number,
+    ownerId: number,
+    updateRestaurantDto: UpdateRestaurantDto,
+  ): Promise<Restaurant> {
+    // Vérifiez si le restaurant existe et si l'utilisateur est le propriétaire
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    if (restaurant.ownerId !== ownerId) {
+      throw new ForbiddenException(
+        'You do not have permission to update this restaurant',
+      );
+    }
+
+    // Effectuer la mise à jour du restaurant avec les nouveaux détails
+    const updatedRestaurant = await this.prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: { ...updateRestaurantDto },
+    });
+    return updatedRestaurant;
+  }
+
   async deleteRestaurant(
     restaurant_Id: number,
     ownerId: number,

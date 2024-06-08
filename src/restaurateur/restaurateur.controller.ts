@@ -33,6 +33,7 @@ import { multerConfig } from './Multer/multer.config';
 import { AuthGuard } from 'src/authentification/auth.guard';
 import { ReqUser } from 'src/authentification/decorators/req-user.decorator';
 import { CategoryDto } from './dto/CategorieDto';
+import { UpdateRestaurantDto } from './dto/UpdateRestaurantDto';
 
 @Controller('restaurants')
 @UseGuards(AuthGuard)
@@ -60,7 +61,20 @@ export class RestaurateurController {
   async getRestaurantMenus(@Param('id') id: string, @ReqUser() user: User) {
     return this.restaurateurService.getRestaurantMenus(+id, user.id);
   }
-  @Delete('/:id')
+  @Put('update/:id')
+  async updateRestaurant(
+    @Param('id') restaurantId: number,
+    @Body() updateRestaurantDto: UpdateRestaurantDto,
+    @ReqUser() user: User,
+  ) {
+    // Appeler la méthode updateRestaurant du service
+    return this.restaurateurService.updateRestaurant(
+      restaurantId,
+      user.id,
+      updateRestaurantDto,
+    );
+  }
+  @Delete('delete/:id')
   async deleteRestaurant(
     @Param('id') restaurantId: string,
     @ReqUser() user: User,
