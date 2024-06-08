@@ -182,18 +182,79 @@ export class RestaurateurService {
     restaurantRequestId: number,
     newStatus: RestaurantStatus,
   ): Promise<RestaurantRequest> {
-    const updatedRequest = await this.prisma.restaurantRequest.update({
+    const currentRequest = await this.prisma.restaurantRequest.findUnique({
       where: { id: restaurantRequestId },
-      data: { status: newStatus },
       include: { restaurant: true },
     });
-    const restaurantId = updatedRequest.restaurant.id;
 
-    await this.prisma.restaurant.update({
-      where: { id: restaurantId },
-      data: { status: newStatus },
-    });
-    return updatedRequest;
+    if (!currentRequest) {
+      throw new Error("La demande de restaurant n'existe pas");
+    }
+
+    const currentStatus = currentRequest.status;
+
+    if (newStatus === RestaurantStatus.APPROVED) {
+      if (
+        currentStatus === RestaurantStatus.PENDING ||
+        currentStatus === RestaurantStatus.REJECTED
+      ) {
+        await this.prisma.restaurantRequest.update({
+          where: { id: restaurantRequestId },
+          data: { status: newStatus },
+        });
+        await this.prisma.restaurant.update({
+          where: { id: currentRequest.restaurant_id },
+          data: { status: newStatus },
+        });
+        return currentRequest;
+      } else if (currentStatus === RestaurantStatus.BLOCKED) {
+        throw new Error("impossible d'accepter une demande déjà bloquée");
+      }
+    }
+
+    if (newStatus === RestaurantStatus.REJECTED) {
+      if (currentStatus === RestaurantStatus.PENDING) {
+        await this.prisma.restaurantRequest.update({
+          where: { id: restaurantRequestId },
+          data: { status: newStatus },
+        });
+        await this.prisma.restaurant.update({
+          where: { id: currentRequest.restaurant_id },
+          data: { status: newStatus },
+        });
+        return currentRequest;
+      } else if (
+        currentStatus === RestaurantStatus.BLOCKED ||
+        currentStatus === RestaurantStatus.APPROVED
+      ) {
+        throw new Error(
+          'impossible de rejeter une demande déjà bloquée ou acceptée',
+        );
+      }
+    }
+
+    if (newStatus === RestaurantStatus.BLOCKED) {
+      if (currentStatus === RestaurantStatus.APPROVED) {
+        await this.prisma.restaurantRequest.update({
+          where: { id: restaurantRequestId },
+          data: { status: newStatus },
+        });
+        await this.prisma.restaurant.update({
+          where: { id: currentRequest.restaurant_id },
+          data: { status: newStatus },
+        });
+        return currentRequest;
+      } else if (
+        currentStatus === RestaurantStatus.REJECTED ||
+        currentStatus === RestaurantStatus.PENDING
+      ) {
+        throw new Error(
+          'impossible de bloquer une demande déjà rejetée ou en attente',
+        );
+      }
+    }
+
+    throw new Error('Statut de mise à jour non autorisé');
   }
   async switchRestaurant(
     ownerId: number,
@@ -212,9 +273,9 @@ export class RestaurateurService {
     return restaurant;
   }
   async createMenu(
+    ownerId: number,
     restaurantId: number,
     menuDto: MenuDto,
-    ownerId: User,
   ): Promise<Menu> {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: {
@@ -232,7 +293,7 @@ export class RestaurateurService {
         name: menuDto.name,
         description: menuDto.description,
         restaurant: { connect: { id: restaurantId } },
-        owner: { connect: { id: ownerId.id } },
+        owner: { connect: { id: ownerId } },
       },
     });
     return menu;
@@ -301,25 +362,39 @@ export class RestaurateurService {
   async createCategory(
     menuId: number,
     categoryDto: CategoryDto,
+    userId: number, // Add userId parameter
   ): Promise<Category> {
+    // Find the menu and include the associated restaurant
     const menu = await this.prisma.menu.findUnique({
       where: { id: menuId },
+      include: { restaurant: true }, // Include the associated restaurant
     });
+
+    // Check if the menu exists
     if (!menu) {
       throw new NotFoundException('Menu not found');
     }
 
+    // Check if the user is the owner of the restaurant associated with the menu
+    if (menu.restaurant.ownerId !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to create a category for this menu',
+      );
+    }
+
+    // Create the category
     const category = await this.prisma.category.create({
       data: {
         name: categoryDto.name,
         description: categoryDto.description,
         menu: { connect: { id: menuId } },
-        restaurant: { connect: { id: menu.restaurant_id } },
+        restaurant: { connect: { id: menu.restaurant.id } }, // Use menu.restaurant.id instead of menu.restaurant_id
       },
     });
 
     return category;
   }
+
   async getCategories(menuId: number, userId: number): Promise<Category[]> {
     // Vérifiez si le menu existe et appartient à l'utilisateur
     const menu = await this.prisma.menu.findUnique({
@@ -363,7 +438,6 @@ export class RestaurateurService {
         'You do not have permission to access these menu items',
       );
     }
-
     const menuItems = await this.prisma.menuItem.findMany({
       where: { categoryId: categoryId },
     });
@@ -415,14 +489,24 @@ export class RestaurateurService {
   ): Promise<MenuItem> {
     const menuItem = await this.prisma.menuItem.findUnique({
       where: { id: menuItemId },
-      include: { menu: { include: { restaurant: true } } },
+      include: {
+        category: {
+          include: {
+            menu: {
+              include: {
+                restaurant: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!menuItem) {
       throw new NotFoundException('MenuItem not found');
     }
 
-    if (menuItem.menu.restaurant.ownerId !== ownerId) {
+    if (menuItem.category.menu.restaurant.ownerId !== ownerId) {
       throw new ForbiddenException(
         'You do not have permission to update this menu item',
       );

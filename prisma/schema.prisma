@@ -55,7 +55,7 @@ model Restaurant {
   imageUrl     String?
   menuItems    MenuItem[]
   menu         Menu[]
-  status       RestaurantStatus    @default(DRAFT)
+  status       RestaurantStatus    @default(PENDING)
   requests     RestaurantRequest[]
   ownerId      Int
   owner        User                @relation(fields: [ownerId], references: [id])
@@ -104,7 +104,6 @@ model Category {
 }
 
 enum RestaurantStatus {
-  DRAFT
   PENDING
   APPROVED
   REJECTED

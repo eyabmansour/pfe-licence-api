@@ -102,7 +102,14 @@ export class RestaurateurController {
   ): Promise<Restaurant> {
     return this.restaurateurService.switchRestaurant(user.id, restaurantId);
   }
-
+  @Post('/:restaurantId/menus')
+  async createMenu(
+    @ReqUser() user: User,
+    @Param('restaurantId') restaurantId: String,
+    @Body() menuDto: MenuDto,
+  ) {
+    return this.restaurateurService.createMenu(user.id, +restaurantId, menuDto);
+  }
   @Put('/:restaurantId/:menuId')
   async updateMenu(
     @Param('restaurantId') restaurantId: String,
@@ -115,6 +122,18 @@ export class RestaurateurController {
       +menuId,
       user.id,
       menuDto,
+    );
+  }
+  @Post('menus/:menuId/categories')
+  async createCategory(
+    @Param('menuId') menuId: string,
+    @Body() categoryDto: CategoryDto,
+    @ReqUser() user: User,
+  ) {
+    return this.restaurateurService.createCategory(
+      +menuId,
+      categoryDto,
+      user.id,
     );
   }
   @Put(':id')
@@ -138,23 +157,46 @@ export class RestaurateurController {
     return this.restaurateurService.deleteCategory(user.id, id);
   }
   @Get('categories/:menuId')
-  async getCategories(@Param('menuId') menuId: number, @ReqUser() user: User) {
+  async getCategories(@Param('menuId') menuId: string, @ReqUser() user: User) {
     if (!menuId || !user.id) {
       throw new BadRequestException('menuId and userId must be provided');
     }
-    return this.restaurateurService.getCategories(menuId, user.id);
+    return this.restaurateurService.getCategories(+menuId, user.id);
   }
-  @Get('menu-items/categoryId')
+  @Get('menu-items/:categoryId')
   async getMenuItems(
-    @Param('categoryId') categoryId: number,
+    @Param('categoryId') categoryId: string,
     @ReqUser() user: User,
   ) {
     if (!categoryId || !user.id) {
       throw new BadRequestException('categoryId and userId must be provided');
     }
-    return this.restaurateurService.getMenuItems(categoryId, user.id);
+    return this.restaurateurService.getMenuItems(+categoryId, user.id);
   }
-
+  @Post('categories/:categoryId/menu-items')
+  async addMenuItemToCategory(
+    @ReqUser() user: User,
+    @Param('categoryId') categoryId: string,
+    @Body() menuItemDto: MenuItemDto,
+  ) {
+    return this.restaurateurService.addMenuItemToCategory(
+      +categoryId,
+      menuItemDto,
+      user.id,
+    );
+  }
+  @Put('menu-items/:menuItemId')
+  async updateMenuItem(
+    @Param('menuItemId') menuItemId: string,
+    @Body() menuItemDto: MenuItemDto,
+    @ReqUser() user: User,
+  ) {
+    return this.restaurateurService.updateMenuItem(
+      +menuItemId,
+      menuItemDto,
+      user.id,
+    );
+  }
   @Delete('menu/delete/:restaurantId/:menuId')
   @MinRole(UserRole.RESTAURATEUR)
   async deleteMenu(
