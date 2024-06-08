@@ -60,6 +60,13 @@ export class RestaurateurController {
   async getRestaurantMenus(@Param('id') id: string, @ReqUser() user: User) {
     return this.restaurateurService.getRestaurantMenus(+id, user.id);
   }
+  @Delete('/:id')
+  async deleteRestaurant(
+    @Param('id') restaurantId: string,
+    @ReqUser() user: User,
+  ): Promise<void> {
+    await this.restaurateurService.deleteRestaurant(+restaurantId, user.id);
+  }
   /* @Get('users/:userId/restaurants')
   @MinRole(UserRole.ADMINISTRATOR)
   async getUserRestaurants(@Param('userId') userId: string): Promise<any> {
@@ -92,8 +99,13 @@ export class RestaurateurController {
   async updateStatus(
     @Param('id') requestId: string,
     @Param('status') status: RestaurantStatus,
+    @ReqUser() user: User,
   ): Promise<RestaurantRequest> {
-    return this.restaurateurService.updateRestaurantStatus(+requestId, status);
+    return this.restaurateurService.updateRestaurantStatus(
+      +requestId,
+      status,
+      user.id,
+    );
   }
   @Patch('/switch/:id')
   async switchRestaurant(

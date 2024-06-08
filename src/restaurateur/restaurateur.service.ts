@@ -111,6 +111,30 @@ export class RestaurateurService {
       );
     }
   }
+  async deleteRestaurant(
+    restaurant_Id: number,
+    ownerId: number,
+  ): Promise<void> {
+    // Vérifier si le restaurant existe et si l'utilisateur est le propriétaire
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurant_Id },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    if (restaurant.ownerId !== ownerId) {
+      throw new ForbiddenException(
+        'You do not have permission to delete this restaurant',
+      );
+    }
+    // Supprimer le restaurant
+    await this.prisma.restaurant.delete({
+      where: { id: restaurant_Id },
+    });
+  }
+
   async getRestaurantMenus(
     restaurantId: number,
     ownerId: number,
@@ -181,18 +205,16 @@ export class RestaurateurService {
   async updateRestaurantStatus(
     restaurantRequestId: number,
     newStatus: RestaurantStatus,
+    userId: number,
   ): Promise<RestaurantRequest> {
     const currentRequest = await this.prisma.restaurantRequest.findUnique({
       where: { id: restaurantRequestId },
       include: { restaurant: true },
     });
-
     if (!currentRequest) {
       throw new Error("La demande de restaurant n'existe pas");
     }
-
     const currentStatus = currentRequest.status;
-
     if (newStatus === RestaurantStatus.APPROVED) {
       if (
         currentStatus === RestaurantStatus.PENDING ||
@@ -206,13 +228,10 @@ export class RestaurateurService {
           where: { id: currentRequest.restaurant_id },
           data: { status: newStatus },
         });
-        return currentRequest;
       } else if (currentStatus === RestaurantStatus.BLOCKED) {
         throw new Error("impossible d'accepter une demande déjà bloquée");
       }
-    }
-
-    if (newStatus === RestaurantStatus.REJECTED) {
+    } else if (newStatus === RestaurantStatus.REJECTED) {
       if (currentStatus === RestaurantStatus.PENDING) {
         await this.prisma.restaurantRequest.update({
           where: { id: restaurantRequestId },
@@ -222,7 +241,6 @@ export class RestaurateurService {
           where: { id: currentRequest.restaurant_id },
           data: { status: newStatus },
         });
-        return currentRequest;
       } else if (
         currentStatus === RestaurantStatus.BLOCKED ||
         currentStatus === RestaurantStatus.APPROVED
@@ -231,9 +249,7 @@ export class RestaurateurService {
           'impossible de rejeter une demande déjà bloquée ou acceptée',
         );
       }
-    }
-
-    if (newStatus === RestaurantStatus.BLOCKED) {
+    } else if (newStatus === RestaurantStatus.BLOCKED) {
       if (currentStatus === RestaurantStatus.APPROVED) {
         await this.prisma.restaurantRequest.update({
           where: { id: restaurantRequestId },
@@ -243,7 +259,6 @@ export class RestaurateurService {
           where: { id: currentRequest.restaurant_id },
           data: { status: newStatus },
         });
-        return currentRequest;
       } else if (
         currentStatus === RestaurantStatus.REJECTED ||
         currentStatus === RestaurantStatus.PENDING
@@ -252,9 +267,16 @@ export class RestaurateurService {
           'impossible de bloquer une demande déjà rejetée ou en attente',
         );
       }
+    } else {
+      throw new Error('Statut de mise à jour non autorisé');
     }
 
-    throw new Error('Statut de mise à jour non autorisé');
+    // Recharger la demande mise à jour pour inclure les nouveaux détails
+    const updatedRequest = await this.prisma.restaurantRequest.findUnique({
+      where: { id: restaurantRequestId },
+      include: { restaurant: true },
+    });
+    return updatedRequest;
   }
   async switchRestaurant(
     ownerId: number,
